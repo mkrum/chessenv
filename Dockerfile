@@ -9,7 +9,7 @@ RUN cd /root/MisterQueen && make COMPILE_FLAGS="-std=c99 -Wall -O3 -fPIC" && cd 
 RUN gcc -shared -o /usr/local/lib/libmisterqueen.so /root/MisterQueen/build/release/*.o -lpthread
 RUN gcc -shared -o /usr/local/lib/libtinycthread.so /root/MisterQueen/build/release/deps/tinycthread/tinycthread.o -lpthread
 
-RUN pip3 install cffi
+RUN pip3 install cffi numpy
 
 WORKDIR /root/
 ADD build.py build.py

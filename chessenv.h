@@ -3,8 +3,11 @@
 typedef struct T T;
 
 struct T {
-    Board board;
+    Board boards[1024];
+    size_t N;
 };
 
-T get_test();
-void print_board(T board_struct);
+void reset_env(T* env, int n);
+void print_board(T *env);
+void step_env(T *env, int* moves);
+void get_boards(T *env, int* boards);
