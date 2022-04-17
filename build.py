@@ -44,6 +44,7 @@ void reset_env(T* env, int n);
 void get_boards(T *env, int* boards);
 void print_board(T *env);
 void step_env(T *env, int* moves);
+void get_random_move_env(T *env, int* moves);
 """
 )
 
@@ -54,6 +55,8 @@ ffibuilder.set_source("chessenv_c",
     sources=['chessenv.c'],
     include_dirs=["MisterQueen/src/", "./MisterQueen/src/deps/tinycthread/"],
     library_dirs=["/usr/local/lib"],
+    extra_compile_args=['-fopenmp'],
+    extra_link_args=['-fopenmp'],
     libraries=['m', 'pthread', 'misterqueen', 'tinycthread'])
 
 if __name__ == "__main__":

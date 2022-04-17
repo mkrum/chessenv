@@ -18,4 +18,5 @@ ADD chessenv.c chessenv.c
 ADD chessenv.h chessenv.h
 
 RUN python3 build.py
+ENV OMP_NUM_THREADS 4
 RUN python3 main.py

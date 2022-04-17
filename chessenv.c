@@ -5,11 +5,12 @@
 
 #include "board.h"
 #include "move.h"
+#include "gen.h"
 
 static T Env;
 
 void reset_env(T* env, int n) {
-
+    bb_init();
     for (int i = 0; i < n; i++){
         board_reset(&env->boards[i]);
     }
@@ -112,6 +113,7 @@ void step_env(T *env, int *moves) {
     char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
     char promos[5] = {' ', 'n', 'b', 'r', 'q'};
 
+#pragma omp parallel for
     for (int i = 0; i < (5 * env->N); i += 5) {
         char start_row = rows[moves[i]];
         char start_col = cols[moves[i + 1]];
@@ -120,10 +122,44 @@ void step_env(T *env, int *moves) {
         char promo = promos[moves[i + 4]];
 
         char move_str[5] = {start_row, start_col, end_row, end_col, promo};
-        printf("%s\n", move_str);
 
         Move move;
         move_from_string(&move, move_str);
         make_move(&env->boards[i/5], &move);
+    }
+}
+
+void get_random_move_env(T *env, int *moves) {
+
+#pragma omp parallel for
+    for (int i = 0; i < env->N; i++) {
+        Move possible_moves[MAX_MOVES];
+
+        int total = gen_moves(&env->boards[i], possible_moves);
+        int random_idx = (rand() % (total + 1));
+        Move move = possible_moves[random_idx];
+
+        char move_str[10];
+        move_to_string(&move, move_str);
+
+        int from_row = move_str[0] - 'a';
+        int from_col = move_str[1] - '1';
+        int to_row = move_str[2] - 'a';
+        int to_col = move_str[3] - '1';
+        
+        int promotion = 0;
+        switch (move_str[4]) {
+            case 'n': promotion = 1; break;
+            case 'b': promotion = 2; break;
+            case 'r': promotion = 3; break;
+            case 'q': promotion = 4; break;
+        }
+        moves[5 * i] = from_row;
+        moves[5 * i + 1] = from_col;
+        moves[5 * i + 2] = to_row;
+        moves[5 * i + 3] = to_col;
+        moves[5 * i + 4] = promotion;
+
+        make_move(&env->boards[i], &move);
     }
 }

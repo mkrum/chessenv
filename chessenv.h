@@ -11,3 +11,4 @@ void reset_env(T* env, int n);
 void print_board(T *env);
 void step_env(T *env, int* moves);
 void get_boards(T *env, int* boards);
+void get_random_move_env(T *env, int* boards);

@@ -1,5 +1,6 @@
 
-from chessenv_c.lib import reset_env, print_board, get_boards, step_env, reset_env
+import time
+from chessenv_c.lib import reset_env, print_board, get_boards, step_env, reset_env, get_random_move_env
 from cffi import FFI
 import chessenv_c
 import numpy as np
@@ -34,15 +35,19 @@ def step(env, moves):
 
         idx += 5
 
-    print(move_arr)
     step_env(env, ffi.cast("int *", move_arr.ctypes.data))
 
-env = chessenv_c.ffi.new("T *")
-reset_env(env, 5)
+def step_random_move(env):
+    move_arr = np.zeros(shape=(env.N * 5), dtype=np.int32)
+    get_random_move_env(env, ffi.cast("int *", move_arr.ctypes.data))
 
-moves = ['e2e4' for _ in range(env.N)]
-print_board(env)
-print()
-step(env, moves)
-print("AFTER STEP")
-print_board(env)
+env = chessenv_c.ffi.new("T *")
+reset_env(env, 512)
+
+start = time.time()
+move_arr = np.zeros(shape=(env.N * 5), dtype=np.int32)
+for _ in range(10):
+    get_random_move_env(env, ffi.cast("int *", move_arr.ctypes.data))
+end = time.time()
+
+print(end - start)
