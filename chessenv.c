@@ -129,7 +129,7 @@ void step_env(T *env, int *moves) {
     }
 }
 
-void get_random_move_env(T *env, int *moves) {
+void step_random_move_env(T *env, int *moves) {
 
 #pragma omp parallel for
     for (int i = 0; i < env->N; i++) {

@@ -1,53 +1,62 @@
 
 import time
-from chessenv_c.lib import reset_env, print_board, get_boards, step_env, reset_env, get_random_move_env
+from chessenv_c.lib import reset_env, print_board, get_boards, step_env, reset_env, step_random_move_env
 from cffi import FFI
 import chessenv_c
 import numpy as np
 
 ffi = FFI()
 
+class CChessEnv:
 
-def boards(env):
-    arr = np.zeros(shape=(env.N * 69), dtype=np.int32)
-    get_boards(env, ffi.cast("int *", arr.ctypes.data))
-    arr = arr.reshape(env.N, 69)
-    return arr
-
-def step(env, moves):
     rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     cols= ['1', '2', '3', '4', '5', '6', '7', '8']
     promos = [' ', 'n', 'b', 'r', 'q']
 
-    move_arr = np.zeros(shape=(env.N * 5), dtype=np.int32)
-    idx = 0
-    for move in moves:
-        move_arr[idx] = rows.index(move[0])
-        move_arr[idx + 1] = cols.index(move[1])
+    def __init__(self, n):
+        self.n = n
+        self._env = chessenv_c.ffi.new("T *")
 
-        move_arr[idx + 2] = rows.index(move[2])
-        move_arr[idx + 3] = cols.index(move[3])
+        self.board_arr = np.zeros(shape=(self.n * 69), dtype=np.int32)
+        self.move_arr = np.zeros(shape=(self.n * 69), dtype=np.int32)
 
-        if len(moves) == 4:
-            move_arr[idx + 4] = promos.index(move[4])
-        else:
-            move_arr[idx + 4] = 0
+    def reset(self):
+        reset_env(self._env, self.n)
+        return self._get_state()
 
-        idx += 5
+    def _get_state(self):
+        get_boards(self._env, ffi.cast("int *", self.board_arr.ctypes.data))
+        return self.board_arr.reshape(self.n, 69)
 
-    step_env(env, ffi.cast("int *", move_arr.ctypes.data))
+    def step(self, moves):
 
-def step_random_move(env):
-    move_arr = np.zeros(shape=(env.N * 5), dtype=np.int32)
-    get_random_move_env(env, ffi.cast("int *", move_arr.ctypes.data))
+        idx = 0
+        for move in moves:
+            self.move_arr[idx] = self.rows.index(move[0])
+            self.move_arr[idx + 1] = self.cols.index(move[1])
+    
+            self.move_arr[idx + 2] = self.rows.index(move[2])
+            self.move_arr[idx + 3] = self.cols.index(move[3])
+    
+            if len(moves) == 4:
+                self.move_arr[idx + 4] = self.promos.index(move[4])
+            else:
+                self.move_arr[idx + 4] = 0
+    
+            idx += 5
+        step_env(self._env, ffi.cast("int *", self.move_arr.ctypes.data))
+        step_random_move_env(self._env, ffi.cast("int *", self.move_arr.ctypes.data))
+        return self._get_state()
 
-env = chessenv_c.ffi.new("T *")
-reset_env(env, 512)
+env = CChessEnv(20)
 
-start = time.time()
-move_arr = np.zeros(shape=(env.N * 5), dtype=np.int32)
-for _ in range(10):
-    get_random_move_env(env, ffi.cast("int *", move_arr.ctypes.data))
-end = time.time()
+states = env.reset()
 
-print(end - start)
+print_board(env._env)
+
+moves = ['e2e4' for _ in range(10)]
+states = env.step(moves)
+
+print(states)
+print_board(env._env)
+

@@ -44,7 +44,7 @@ void reset_env(T* env, int n);
 void get_boards(T *env, int* boards);
 void print_board(T *env);
 void step_env(T *env, int* moves);
-void get_random_move_env(T *env, int* moves);
+void step_random_move_env(T *env, int* moves);
 """
 )
 
