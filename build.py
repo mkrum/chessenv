@@ -1,8 +1,10 @@
 from cffi import FFI
 import glob
+
 ffibuilder = FFI()
 
-ffibuilder.cdef("""
+ffibuilder.cdef(
+    """
 typedef struct T T;
 
 typedef unsigned long long bb;
@@ -43,21 +45,25 @@ struct T {
 void reset_env(T* env, int n);
 void get_boards(T *env, int* boards);
 void print_board(T *env);
-void step_env(T *env, int* moves);
-void step_random_move_env(T *env, int* moves);
+void step_env(T *env, int* moves, int* dones);
+void step_random_move_env(T *env, int* moves, int* dones);
+void generate_random_move(T *env, int* moves);
+void fen_to_vec(char* fen, int* boards);
 """
 )
 
-ffibuilder.set_source("chessenv_c", 
-"""
+ffibuilder.set_source(
+    "chessenv_c",
+    """
     #include "chessenv.h"
 """,
-    sources=['chessenv.c'],
+    sources=["chessenv.c"],
     include_dirs=["MisterQueen/src/", "./MisterQueen/src/deps/tinycthread/"],
     library_dirs=["/usr/local/lib"],
-    extra_compile_args=['-fopenmp'],
-    extra_link_args=['-fopenmp'],
-    libraries=['m', 'pthread', 'misterqueen', 'tinycthread'])
+    extra_compile_args=["-fopenmp"],
+    extra_link_args=["-fopenmp"],
+    libraries=["m", "pthread", "misterqueen", "tinycthread"],
+)
 
 if __name__ == "__main__":
     ffibuilder.compile(verbose=True)
