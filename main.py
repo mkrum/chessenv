@@ -65,7 +65,6 @@ class CChessEnv:
 
         return self._get_state(), self.done_arr
 
-
     def step(self, moves):
         idx = 0
         for move in moves:
@@ -84,21 +83,23 @@ class CChessEnv:
 
         return step_arr(self.move_arr)
 
+
 def fen_to_array(fen_str):
     board_arr = np.zeros(shape=(69), dtype=np.int32)
     char_arr = np.char.array(list(fen_str)).ctypes.data
     x = ffi.new(f"char[{len(fen_str)}]", b"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
-    fen_to_vec(x, ffi.cast("int *",board_arr.ctypes.data))
+    fen_to_vec(x, ffi.cast("int *", board_arr.ctypes.data))
     ffi.release(x)
     return board_arr
 
+
 if __name__ == "__main__":
     fen_str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
-    
+
     env = CChessEnv(2)
     states = env.reset()
     print_board(env._env)
-    
+
     while True:
         moves = env.random_sample()
         states, dones = env.step_arr(moves)
