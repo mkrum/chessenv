@@ -15,3 +15,4 @@ void step_random_move_env(T *env, int* boards, int *dones);
 void generate_random_move(T *env, int* boards);
 void board_to_vec(Board board, int* boards);
 void fen_to_vec(char* fen, int* boards);
+void reset_boards(T *env, int *reset);

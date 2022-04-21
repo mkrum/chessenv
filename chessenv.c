@@ -1,20 +1,22 @@
 /* filename: pi.c*/
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include "chessenv.h"
 
 #include "board.h"
-#include "move.h"
-#include "gen.h"
+#include "move.h" #include "gen.h"
 
 static T Env;
 
 void reset_env(T* env, int n) {
+
     bb_init();
+    srand(time(0));
+
     for (int i = 0; i < n; i++){
         board_reset(&env->boards[i]);
     }
-
     env->N = n;
 }
 
@@ -72,28 +74,38 @@ void board_to_vec(Board board, int* boards) {
     
     // Get side to move
     if (board.color == WHITE) {
-        boards[idx] = 1;
+        boards[idx] = 14;
+    } else {
+        boards[idx] = 15;
     }
     ++idx;
     
     // Get castling
     if (board.castle && CASTLE_WHITE_KING) {
-        boards[idx] = 1;
-    } 
+        boards[idx] = 16;
+    } else {
+        boards[idx] = 17;
+    }
     ++idx;
     
     if (board.castle && CASTLE_WHITE_QUEEN) {
-        boards[idx] = 1;
+        boards[idx] = 18;
+    } else {
+        boards[idx] = 19;
     }
     ++idx;
     
     if (board.castle && CASTLE_BLACK_KING) {
-        boards[idx] = 1;
-    } 
+        boards[idx] = 20;
+    }  else {
+        boards[idx] = 21;
+    }
     ++idx;
     
     if (board.castle && CASTLE_BLACK_QUEEN) {
-        boards[idx] = 1;
+        boards[idx] = 22;
+    } else {
+        boards[idx] = 23;
     }
     ++idx;
 }
@@ -106,7 +118,7 @@ void fen_to_vec(char *fen, int* boards) {
 
 void get_boards(T *env, int* boards) {
     int idx = 0;
-    for (int i = 0; i < env->N; i++){
+    for (size_t i = 0; i < env->N; i++){
         Board board = env->boards[i];
         board_to_vec(board, boards);
         boards += 69;
@@ -120,7 +132,8 @@ void step_env(T *env, int *moves, int *dones) {
     char promos[5] = {' ', 'n', 'b', 'r', 'q'};
 
 #pragma omp parallel for
-    for (int i = 0; i < env->N; i += 1) {
+    for (size_t i = 0; i < env->N; i += 1) {
+
         char start_row = rows[moves[5 * i]];
         char start_col = cols[moves[5 * i + 1]];
         char end_row = rows[moves[5 * i + 2]];
@@ -136,23 +149,31 @@ void step_env(T *env, int *moves, int *dones) {
         Move possible_moves[MAX_MOVES];
         int total = gen_legal_moves(&env->boards[i], possible_moves);
 
-        dones[i] = 0;
-        if (total == 0) {
-            board_reset(&env->boards[i]);
-            dones[i] = 1;
-        }
+        dones[i] = total == 0;
+    }
+}
 
+void reset_boards(T *env, int *reset) {
+    for (size_t i = 0; i < env->N; i += 1) {
+        if (reset[i] == 1) {
+            board_reset(&env->boards[i]);
+        }
     }
 }
 
 void generate_random_move(T *env, int *moves) {
 
 #pragma omp parallel for
-    for (int i = 0; i < env->N; i++) {
+    for (size_t i = 0; i < env->N; i++) {
         Move possible_moves[MAX_MOVES];
 
         int total = gen_legal_moves(&env->boards[i], possible_moves);
-        int random_idx = (rand() % (total + 1));
+
+        if (total == 0) {
+            continue;
+        }
+
+        int random_idx = rand() % total;
         Move move = possible_moves[random_idx];
 
         char move_str[10];
@@ -176,7 +197,6 @@ void generate_random_move(T *env, int *moves) {
         moves[5 * i + 3] = to_col;
         moves[5 * i + 4] = promotion;
     }
-
 }
 
 void step_random_move_env(T *env, int *moves, int *dones) {

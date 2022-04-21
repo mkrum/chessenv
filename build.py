@@ -49,6 +49,7 @@ void step_env(T *env, int* moves, int* dones);
 void step_random_move_env(T *env, int* moves, int* dones);
 void generate_random_move(T *env, int* moves);
 void fen_to_vec(char* fen, int* boards);
+void reset_boards(T *env, int *reset);
 """
 )
 
