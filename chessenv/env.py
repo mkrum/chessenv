@@ -27,17 +27,20 @@ from chessenv.rep import CMove, CBoard
 
 
 class CChessEnv:
-    def __init__(self, n):
+    def __init__(self, n, max_step=150, draw_reward=-1):
         self.ffi = FFI()
         self.n = n
+        self.max_step = max_step
+        self.draw_reward = draw_reward
         self._env = chessenv_c.ffi.new("T *")
 
         self.board_arr = np.zeros(shape=(self.n * 69), dtype=np.int32)
         self.move_arr = np.zeros(shape=(self.n * 5), dtype=np.int32)
-
         self.done_arr = np.zeros(shape=(self.n), dtype=np.int32)
+        self.t = np.zeros(self.n)
 
     def reset(self):
+        self.t = np.zeros(self.n)
         reset_env(self._env, self.n)
         return self._get_state()
 
@@ -78,8 +81,14 @@ class CChessEnv:
 
         reward -= np.copy(done_two)
 
-        total_done = (done_one + done_two) > 0
+        self.t += 1
+
+        reward[(self.t > self.max_step)] = self.draw_reward
+
+        total_done = ((done_one + done_two) > 0) | (self.t > self.max_step)
         total_done = np.int32(total_done)
+        self.t[(total_done == 1)] = 0
+
         reset_boards(self._env, self.ffi.cast("int *", total_done.ctypes.data))
 
         return self._get_state(), reward, total_done
@@ -116,11 +125,10 @@ def fen_to_array(fen_str):
 
 
 if __name__ == "__main__":
-    sfa = chessenv_c.ffi.new("SFArray *")
 
-    N = 64
+    N = 512
+    env = CChessEnv(N)#, 1)
 
-    env = SFCChessEnv(N, 1)
     states = env.reset()
 
     dones = np.zeros(N)
@@ -129,8 +137,7 @@ if __name__ == "__main__":
         board = CBoard.from_arr(np.copy(states[0]))
         moves = env.random()
         states, rewards, dones = env.step_arr(moves)
-        print(rewards)
+        print(rewards[dones == 1])
         t += 1
 
     print(t)
-    clean_sfarray(sfa)
