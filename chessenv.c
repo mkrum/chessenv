@@ -310,14 +310,6 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     char buf[1024];
     char start[5] = { 0 };
 
-    //fwrite("isready\n", sizeof(char), strlen("isready\n"), sfpipe.out);
-    //fflush(sfpipe.out);
-    //
-    //printf("here\n");
-    //fgets(buf, 1024, sfpipe.in);
-    //printf("here1\n");
-    //printf("%s\n", buf);
-
     sprintf(cmd, "position fen %s\n", fen);
     fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
     fflush(sfpipe->out);
@@ -331,9 +323,7 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     while (strcmp(start, "best") != 0) {
 
         if (!fgets(buf, 1024, sfpipe->in)) {
-            printf("entering death spiral\n");
             // Try again?
-            //
             clean_sfpipe(sfpipe);
             create_sfpipe(sfpipe);
 
@@ -349,16 +339,12 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
 
         } else {
 
-            //printf("%s\n", buf);
             strncpy(start, buf, 4);
-            //printf("%s\n", start);
-
             start[5] = '\0';
             strncpy(move, buf+9, 5);
             move[6] = '\0';
         }
     }
-
 }
 
 void create_sfpipe(SFPipe *sfpipe) {

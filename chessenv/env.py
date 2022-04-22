@@ -45,17 +45,14 @@ class CChessEnv:
         get_boards(self._env, self.ffi.cast("int *", self.board_arr.ctypes.data))
         return self.board_arr.reshape(self.n, 69)
 
-    def random_sample(self):
+    def random(self):
         generate_random_move(
             self._env, self.ffi.cast("int *", self.move_arr.ctypes.data)
         )
         return np.copy(self.move_arr)
 
-    def stockfish_sample(self, sfa):
-        generate_stockfish_move(
-            self._env, sfa, self.ffi.cast("int *", self.move_arr.ctypes.data)
-        )
-        return np.copy(self.move_arr)
+    def sample_opponent(self):
+        return self.random()
 
     def step_arr(self, move_arr):
         self.move_arr = np.copy(move_arr)
@@ -71,7 +68,9 @@ class CChessEnv:
 
         reward = np.copy(done_one)
 
-        step_random_move_env(
+        self.move_arr = self.sample_opponent()
+
+        step_env(
             self._env,
             self.ffi.cast("int *", self.move_arr.ctypes.data),
             self.ffi.cast("int *", done_two.ctypes.data),
@@ -89,6 +88,22 @@ class CChessEnv:
         moves = CMove.from_str(moves)
         return step_arr(moves.data)
 
+class SFCChessEnv(CChessEnv):
+
+    def __init__(self, n, depth):
+        super().__init__(n)
+        self._sfa = chessenv_c.ffi.new("SFArray *")
+        create_sfarray(self._sfa, depth, n)
+
+    def sample_opponent(self):
+        generate_stockfish_move(
+            self._env, self._sfa, self.ffi.cast("int *", self.move_arr.ctypes.data)
+        )
+        return np.copy(self.move_arr)
+
+    def __del__(self):
+        clean_sfarray(self._sfa)
+
 
 def fen_to_array(fen_str):
     ffi = FFI()
@@ -103,18 +118,16 @@ def fen_to_array(fen_str):
 if __name__ == "__main__":
     sfa = chessenv_c.ffi.new("SFArray *")
 
-    N = 8
+    N = 64
 
-    create_sfarray(sfa, N, N)
-
-    env = CChessEnv(N)
+    env = SFCChessEnv(N, 1)
     states = env.reset()
 
     dones = np.zeros(N)
     t = 0
-    while (t < 1000): #(not dones[0]) and (t < 100):
+    while (t < 1000):
         board = CBoard.from_arr(np.copy(states[0]))
-        moves = env.stockfish_sample(sfa)
+        moves = env.random()
         states, rewards, dones = env.step_arr(moves)
         print(rewards)
         t += 1
