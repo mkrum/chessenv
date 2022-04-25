@@ -56,7 +56,7 @@ ffibuilder.set_source(
     #include "sfarray.h"
     #include "rep.h"
 """,
-    sources=["src/chessenv.c", "src/sfarray.c", "src/rep.c"] ,
+    sources=["src/chessenv.c", "src/sfarray.c", "src/rep.c"],
     include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
     library_dirs=["/usr/local/lib"],
     extra_compile_args=["-fopenmp"],

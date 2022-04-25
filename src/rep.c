@@ -40,8 +40,8 @@ void board_to_array(int* boards, Board board) {
                 case 'q':   s = 11; break;
                 case 'k':   s = 12; break;
             };
-
-            if (board.ep == BIT(RF(rank, file))) {
+            
+            if (board.ep == (long long int)BIT(RF(rank, file))) {
                 s = 13;
             }
     
@@ -268,7 +268,6 @@ void board_to_fen(char *fen, Board board) {
         fen[idx] = '-';
         idx++;
     } else {
-    
         for (int rank = 0; rank < 8; rank++) {
             for (int file = 0; file < 8; file++) {
                 if (board.ep == (long long int)BIT(RF(rank, file))) {

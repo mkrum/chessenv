@@ -100,10 +100,14 @@ class CChessEnv:
     def get_possible(self):
         possible_moves = -np.ones(shape=(self.n * 256 * 5), dtype=np.int32)
         real_poss = -np.ones(shape=(self.n, 256, 5), dtype=np.int32)
-        get_possible_moves(self._env, self.ffi.cast("int *", possible_moves.ctypes.data))
+        get_possible_moves(
+            self._env, self.ffi.cast("int *", possible_moves.ctypes.data)
+        )
 
         for i in range(self.n):
-            real_poss[i] = possible_moves[256 * 5 *i: 256 * 5 * (i+1)].reshape(256, 5)
+            real_poss[i] = possible_moves[256 * 5 * i : 256 * 5 * (i + 1)].reshape(
+                256, 5
+            )
 
         return real_poss
 
@@ -111,8 +115,8 @@ class CChessEnv:
         moves = CMove.from_str(moves)
         return self.step_arr(moves.data)
 
-class SFCChessEnv(CChessEnv):
 
+class SFCChessEnv(CChessEnv):
     def __init__(self, n, depth):
         super().__init__(n)
         self._sfa = chessenv_c.ffi.new("SFArray *")
@@ -131,7 +135,7 @@ class SFCChessEnv(CChessEnv):
 if __name__ == "__main__":
 
     N = 5
-    env = CChessEnv(N)#, 1)
+    env = CChessEnv(N)  # , 1)
 
     states = env.reset()
 
@@ -142,7 +146,7 @@ if __name__ == "__main__":
 
     dones = np.zeros(N)
     t = 0
-    while (t < 1000):
+    while t < 1000:
         board = CBoard.from_arr(np.copy(states[0]))
         moves = env.random()
         states, rewards, dones = env.step_arr(moves)
