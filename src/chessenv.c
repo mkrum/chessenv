@@ -42,25 +42,13 @@ void get_boards(Env *env, int* boards) {
 
 void step_env(Env *env, int *moves, int *dones, int *reward) {
 
-    char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-    char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
-    char promos[5] = {' ', 'n', 'b', 'r', 'q'};
-
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i += 1) {
 
-        char start_row = rows[moves[5 * i]];
-        char start_col = cols[moves[5 * i + 1]];
-        char end_row = rows[moves[5 * i + 2]];
-        char end_col = cols[moves[5 * i + 3]];
-        char promo = promos[moves[5 * i + 4]];
-
-        char move_str[5] = {start_row, start_col, end_row, end_col, promo};
-
         Move move;
-        move_from_string(&move, move_str);
-        Move possible_moves[MAX_MOVES];
+        array_to_move(&move, &moves[5 * i]);
 
+        Move possible_moves[MAX_MOVES];
         int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
 
         int legal = 0;
@@ -147,27 +135,7 @@ void generate_random_move(Env *env, int *moves) {
 
         int random_idx = rand() % total;
         Move move = possible_moves[random_idx];
-
-        char move_str[10];
-        move_to_string(&move, move_str);
-
-        int from_row = move_str[0] - 'a';
-        int from_col = move_str[1] - '1';
-        int to_row = move_str[2] - 'a';
-        int to_col = move_str[3] - '1';
-        
-        int promotion = 0;
-        switch (move_str[4]) {
-            case 'n': promotion = 1; break;
-            case 'b': promotion = 2; break;
-            case 'r': promotion = 3; break;
-            case 'q': promotion = 4; break;
-        }
-        moves[5 * i] = from_row;
-        moves[5 * i + 1] = from_col;
-        moves[5 * i + 2] = to_row;
-        moves[5 * i + 3] = to_col;
-        moves[5 * i + 4] = promotion;
+        move_to_array(&moves[5 * i], move);
     }
 }
 

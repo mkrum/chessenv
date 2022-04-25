@@ -1,4 +1,5 @@
 
+#include "rep.h"
 #include "board.h"
 
 void board_to_vec(Board board, int* boards) {
@@ -175,4 +176,50 @@ void board_to_fen(char *fen, Board board) {
         idx++;
     }
     fen[idx] = '\0';
+}
+
+void array_to_move_str(char* move_str, int* move_arr) {
+    char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+    char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
+    char promos[5] = {' ', 'n', 'b', 'r', 'q'};
+
+    move_str[0] = rows[move_arr[0]];
+    move_str[1] = cols[move_arr[1]];
+    move_str[2] = rows[move_arr[2]];
+    move_str[3] = cols[move_arr[3]];
+    move_str[4] = promos[move_arr[4]];
+}
+
+void array_to_move(Move *move, int* move_arr) {
+    char move_str[5];
+    array_to_move_str(move_str, move_arr);
+    move_from_string(move, move_str);
+}
+
+void move_str_to_array(int* move_arr, char *move_str) {
+
+    int from_row = move_str[0] - 'a';
+    int from_col = move_str[1] - '1';
+    int to_row = move_str[2] - 'a';
+    int to_col = move_str[3] - '1';
+
+    int promotion = 0;
+    switch (move_str[4]) {
+        case 'n': promotion = 1; break;
+        case 'b': promotion = 2; break;
+        case 'r': promotion = 3; break;
+        case 'q': promotion = 4; break;
+    }
+
+    move_arr[0] = from_row;
+    move_arr[1] = from_col;
+    move_arr[2] = to_row;
+    move_arr[3] = to_col;
+    move_arr[4] = promotion;
+}
+
+void move_to_array(int* move_arr, Move move) {
+    char move_str[10];
+    move_to_string(&move, move_str);
+    move_str_to_array(move_arr, move_str);
 }

@@ -34,13 +34,17 @@ void print_board(Env *env);
 void step_env(Env *env, int* moves, int* dones, int* rewards);
 void step_random_move_env(Env *env, int* moves, int* dones);
 void generate_random_move(Env *env, int* moves);
-void fen_to_vec(char* fen, int* boards);
 void reset_boards(Env *env, int *reset);
+void get_possible_moves(Env* env, int* total_moves);
 
 void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
 void create_sfarray(SFArray *sfa, int depth, size_t N);
 void clean_sfarray(SFArray* arr);
-void get_possible_moves(Env* env, int* total_moves);
+
+void fen_to_vec(char* fen, int* boards);
+
+void move_str_to_array(int* move_arr, char *move_str);
+void array_to_move_str(char* move_str, int* move_arr);
 """
 )
 
