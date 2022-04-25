@@ -78,8 +78,8 @@ ffibuilder.set_source(
     """
     #include "chessenv.h"
 """,
-    sources=["chessenv.c"],
-    include_dirs=["MisterQueen/src/", "./MisterQueen/src/deps/tinycthread/"],
+    sources=["src/chessenv.c"],
+    include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
     library_dirs=["/usr/local/lib"],
     extra_compile_args=["-fopenmp"],
     extra_link_args=["-fopenmp"],
