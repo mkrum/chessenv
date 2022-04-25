@@ -1,1 +1,2 @@
-from chessenv.env import CChessEnv, fen_to_array
+from chessenv.env import SFCChessEnv, CChessEnv
+from chessenv.rep import CMove, CBoard

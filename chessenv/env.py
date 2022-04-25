@@ -21,13 +21,14 @@ from chessenv_c.lib import (
     reset_boards,
     create_sfarray,
     clean_sfarray,
+    get_possible_moves,
 )
 
 from chessenv.rep import CMove, CBoard
 
 
 class CChessEnv:
-    def __init__(self, n, max_step=150, draw_reward=-1):
+    def __init__(self, n, max_step=100, draw_reward=0):
         self.ffi = FFI()
         self.n = n
         self.max_step = max_step
@@ -37,6 +38,7 @@ class CChessEnv:
         self.board_arr = np.zeros(shape=(self.n * 69), dtype=np.int32)
         self.move_arr = np.zeros(shape=(self.n * 5), dtype=np.int32)
         self.done_arr = np.zeros(shape=(self.n), dtype=np.int32)
+        self.reward_arr = np.zeros(shape=(self.n), dtype=np.int32)
         self.t = np.zeros(self.n)
 
     def reset(self):
@@ -63,13 +65,15 @@ class CChessEnv:
         done_one = np.zeros(shape=(self.n), dtype=np.int32)
         done_two = np.zeros(shape=(self.n), dtype=np.int32)
 
+        my_reward = np.zeros(shape=(self.n), dtype=np.int32)
+        their_reward = np.zeros(shape=(self.n), dtype=np.int32)
+
         step_env(
             self._env,
             self.ffi.cast("int *", self.move_arr.ctypes.data),
             self.ffi.cast("int *", done_one.ctypes.data),
+            self.ffi.cast("int *", my_reward.ctypes.data),
         )
-
-        reward = np.copy(done_one)
 
         self.move_arr = self.sample_opponent()
 
@@ -77,9 +81,10 @@ class CChessEnv:
             self._env,
             self.ffi.cast("int *", self.move_arr.ctypes.data),
             self.ffi.cast("int *", done_two.ctypes.data),
+            self.ffi.cast("int *", their_reward.ctypes.data),
         )
 
-        reward -= np.copy(done_two)
+        reward = my_reward - (1 - done_one) * (their_reward)
 
         self.t += 1
 
@@ -93,9 +98,19 @@ class CChessEnv:
 
         return self._get_state(), reward, total_done
 
+    def get_possible(self):
+        possible_moves = -np.ones(shape=(self.n * 256 * 5), dtype=np.int32)
+        real_poss = -np.ones(shape=(self.n, 256, 5), dtype=np.int32)
+        get_possible_moves(self._env, self.ffi.cast("int *", possible_moves.ctypes.data))
+
+        for i in range(self.n):
+            real_poss[i] = possible_moves[256 * 5 *i: 256 * 5 * (i+1)].reshape(256, 5)
+
+        return real_poss
+
     def step(self, moves):
         moves = CMove.from_str(moves)
-        return step_arr(moves.data)
+        return self.step_arr(moves.data)
 
 class SFCChessEnv(CChessEnv):
 
@@ -114,22 +129,17 @@ class SFCChessEnv(CChessEnv):
         clean_sfarray(self._sfa)
 
 
-def fen_to_array(fen_str):
-    ffi = FFI()
-    board_arr = np.zeros(shape=(69), dtype=np.int32)
-    char_arr = np.char.array(list(fen_str)).ctypes.data
-    x = ffi.new(f"char[{len(fen_str)}]", bytes(fen_str, encoding="utf-8"))
-    fen_to_vec(x, ffi.cast("int *", board_arr.ctypes.data))
-    ffi.release(x)
-    return board_arr
-
-
 if __name__ == "__main__":
 
-    N = 512
+    N = 5
     env = CChessEnv(N)#, 1)
 
     states = env.reset()
+
+    print(possible_moves[0])
+    print(possible_moves[1])
+
+    exit()
 
     dones = np.zeros(N)
     t = 0

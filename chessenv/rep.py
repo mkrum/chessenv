@@ -1,6 +1,10 @@
 
 from typing import List
 import chess
+import numpy as np
+from cffi import FFI
+
+from chessenv_c.lib import fen_to_vec
 
 class CMove:
 
@@ -16,13 +20,25 @@ class CMove:
         data = np.zeros(5 * len(move_list), dtype=np.int32)
         idx = 0
         for move in move_list:
+            move = list(move)
+
+            if move[0] not in cls.rows:
+                move[0] = "a"
             data[idx] = cls.rows.index(move[0])
+
+            if move[1] not in cls.cols:
+                move[1] = "1"
             data[idx + 1] = cls.cols.index(move[1])
 
+            if move[2] not in cls.rows:
+                move[2] = "a"
             data[idx + 2] = cls.rows.index(move[2])
+
+            if move[3] not in cls.cols:
+                move[3] = "1"
             data[idx + 3] = cls.cols.index(move[3])
 
-            if len(move) == 5:
+            if len(move) == 5 and move[4] in cls.promos:
                 data[idx + 4] = cls.promos.index(move[4])
             else:
                 data[idx + 4] = 0
@@ -87,6 +103,7 @@ class CBoard:
 
         # Place the pieces, load en-passant
         piece_squares = arr[:64]
+        print(piece_squares)
         for (i, square) in enumerate(chess.SQUARES_180):
 
             piece_symbol = cls.piece_symbols[int(piece_squares[i])]
@@ -110,7 +127,7 @@ class CBoard:
 
         castling_fen = ""
 
-        white_castle_king = int(arr[65])
+        white_castle_king = int(arr[68])
         if white_castle_king == 16:
             castling_fen += "K"
         elif white_castle_king == 17:
@@ -118,7 +135,7 @@ class CBoard:
         else:
             raise (ValueError)
 
-        white_castle_queen = int(arr[66])
+        white_castle_queen = int(arr[67])
         if white_castle_queen == 18:
             castling_fen += "Q"
         elif white_castle_queen == 19:
@@ -126,7 +143,7 @@ class CBoard:
         else:
             raise (ValueError)
 
-        black_castle_king = int(arr[67])
+        black_castle_king = int(arr[66])
         if black_castle_king == 20:
             castling_fen += "k"
         elif black_castle_king == 21:
@@ -134,7 +151,7 @@ class CBoard:
         else:
             raise (ValueError)
 
-        black_castle_queen = int(arr[68])
+        black_castle_queen = int(arr[65])
         if black_castle_queen == 22:
             castling_fen += "q"
         elif black_castle_queen == 23:
@@ -147,3 +164,21 @@ class CBoard:
 
     def to_fen(self):
         return self.board.fen()
+
+    @classmethod
+    def from_fen(cls, fen_str):
+        board = chess.Board(fen_str)
+        return cls(board)
+
+    def to_array(self):
+        fen = self.to_fen()
+        return fen_to_array(fen)
+
+def fen_to_array(fen_str):
+    ffi = FFI()
+    board_arr = np.zeros(shape=(69), dtype=np.int32)
+    char_arr = np.char.array(list(fen_str)).ctypes.data
+    x = ffi.new(f"char[{len(fen_str)}]", bytes(fen_str, encoding="utf-8"))
+    fen_to_vec(x, ffi.cast("int *", board_arr.ctypes.data))
+    ffi.release(x)
+    return board_arr

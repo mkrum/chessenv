@@ -66,8 +66,9 @@ void board_to_vec(Board board, int* boards) {
                 case 'q':   s = 11; break;
                 case 'k':   s = 12; break;
             };
-    
+
             if (board.ep == BIT(RF(rank, file))) {
+                printf("Hello!\n");
                 s = 13;
             }
     
@@ -83,35 +84,39 @@ void board_to_vec(Board board, int* boards) {
         boards[idx] = 15;
     }
     ++idx;
-    
-    // Get castling
-    if (board.castle && CASTLE_WHITE_KING) {
+
+    int castle = board.castle; 
+    if (castle >= 8) {
+        boards[idx] = 22;
+        castle -= 8;
+    } else {
+        boards[idx] = 23;
+    }
+    idx++;
+
+    if (castle >= 4) {
+        boards[idx] = 20;
+        castle -= 4;
+    } else {
+        boards[idx] = 21;
+    }
+    idx++;
+
+    if (castle >= 2) {
+        boards[idx] = 18;
+        castle -= 2;
+    } else {
+        boards[idx] = 19;
+    }
+    idx++;
+
+    if (castle >= 1) {
         boards[idx] = 16;
     } else {
         boards[idx] = 17;
     }
-    ++idx;
+    idx++;
     
-    if (board.castle && CASTLE_WHITE_QUEEN) {
-        boards[idx] = 18;
-    } else {
-        boards[idx] = 19;
-    }
-    ++idx;
-    
-    if (board.castle && CASTLE_BLACK_KING) {
-        boards[idx] = 20;
-    }  else {
-        boards[idx] = 21;
-    }
-    ++idx;
-    
-    if (board.castle && CASTLE_BLACK_QUEEN) {
-        boards[idx] = 22;
-    } else {
-        boards[idx] = 23;
-    }
-    ++idx;
 }
 
 void fen_to_vec(char *fen, int* boards) {
@@ -119,6 +124,7 @@ void fen_to_vec(char *fen, int* boards) {
     board_load_fen(&board, fen);
     board_to_vec(board, boards);
 }
+
 
 void get_boards(T *env, int* boards) {
     int idx = 0;
@@ -129,13 +135,13 @@ void get_boards(T *env, int* boards) {
     }
 }
 
-void step_env(T *env, int *moves, int *dones) {
+void step_env(T *env, int *moves, int *dones, int *reward) {
 
     char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
     char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
     char promos[5] = {' ', 'n', 'b', 'r', 'q'};
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_t i = 0; i < env->N; i += 1) {
 
         char start_row = rows[moves[5 * i]];
@@ -148,12 +154,69 @@ void step_env(T *env, int *moves, int *dones) {
 
         Move move;
         move_from_string(&move, move_str);
-        make_move(&env->boards[i], &move);
+        Move possible_moves[MAX_MOVES];
+
+        int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
+
+        int legal = 0;
+        for (int i = 0; i < total_legal; i++) {
+            if ((move.src == possible_moves[i].src) && (move.dst == possible_moves[i].dst)) {
+                legal = 1;
+            }
+        }
+
+        Undo undo;
+        if (legal) {
+            do_move(&env->boards[i], &move, &undo);
+
+            int total = gen_legal_moves(&env->boards[i], possible_moves);
+            dones[i] = (total == 0);
+            reward[i] = (total == 0);
+
+        } else {
+            // just a dummy move
+            do_move(&env->boards[i], &possible_moves[0], &undo);
+
+            reward[i] = -1;
+            dones[i] = 1;
+        }
+
+    }
+}
+
+void get_possible_moves(T* env, int* total_moves) {
+
+#pragma omp parallel for
+    for (size_t i = 0; i < env->N; i++) {
 
         Move possible_moves[MAX_MOVES];
-        int total = gen_legal_moves(&env->boards[i], possible_moves);
+        int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
 
-        dones[i] = total == 0;
+        int idx = MAX_MOVES * 5 * i;
+
+        for (int i = 0; i < total_legal; i++) {
+            char move_str[10];
+            move_to_string(&possible_moves[i], move_str);
+
+            int from_row = move_str[0] - 'a';
+            int from_col = move_str[1] - '1';
+            int to_row = move_str[2] - 'a';
+            int to_col = move_str[3] - '1';
+            
+            int promotion = 0;
+            switch (move_str[4]) {
+                case 'n': promotion = 1; break;
+                case 'b': promotion = 2; break;
+                case 'r': promotion = 3; break;
+                case 'q': promotion = 4; break;
+            }
+            total_moves[idx] = from_row;
+            total_moves[idx + 1] = from_col;
+            total_moves[idx + 2] = to_row;
+            total_moves[idx + 3] = to_col;
+            total_moves[idx + 4] = promotion;
+            idx += 5;
+        }
     }
 }
 
@@ -205,7 +268,7 @@ void generate_random_move(T *env, int *moves) {
 
 void step_random_move_env(T *env, int *moves, int *dones) {
     generate_random_move(env, moves);
-    step_env(env, moves, dones);
+    step_env(env, moves, dones, NULL);
 }
 
 void board_to_fen(char *fen, Board board) {
@@ -287,23 +350,7 @@ void board_to_fen(char *fen, Board board) {
         idx++;
     }
     fen[idx] = '\0';
-
 }
-
-//struct SFPipe {
-//    int pid;
-//    FILE* in;
-//    FILE* out;
-//};
-//typedef struct SFPipe SFPipe;
-
-//struct SFArray {
-//    size_t N;
-//    int depth;
-//    SFPipe sfpipe[256];
-//};
-//typedef struct SFArray SFArray;
-//
 
 void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     char cmd[256];
@@ -318,24 +365,24 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
     fflush(sfpipe->out);
 
-
     // not ideal...
     while (strcmp(start, "best") != 0) {
 
         if (!fgets(buf, 1024, sfpipe->in)) {
             // Try again?
-            clean_sfpipe(sfpipe);
-            create_sfpipe(sfpipe);
+            //clean_sfpipe(sfpipe);
+            //create_sfpipe(sfpipe);
 
             sprintf(cmd, "position fen %s\n", fen);
             printf("%s\n", cmd);
-            fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
-            fflush(sfpipe->out);
+            exit(1);
+            //fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
+            //fflush(sfpipe->out);
 
-            sprintf(cmd, "go depth %i\n", depth);
-            printf("%s\n", cmd);
-            fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
-            fflush(sfpipe->out);
+            //sprintf(cmd, "go depth %i\n", depth);
+            //printf("%s\n", cmd);
+            //fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
+            //fflush(sfpipe->out);
 
         } else {
 
@@ -360,7 +407,7 @@ void create_sfpipe(SFPipe *sfpipe) {
         dup2(in_pipe_f[1], STDOUT_FILENO);
         dup2(in_pipe_f[1], STDERR_FILENO);
         
-        execl("/usr/games/stockfish", "stockfish", (char*) NULL);
+        execl("/nfs/Stockfish/src/stockfish", "stockfish", (char*) NULL);
         exit(1);
     }
 
