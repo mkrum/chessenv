@@ -90,6 +90,42 @@ class CMoves:
 
 
 @dataclass(frozen=True)
+class CBoards:
+
+    data: np.array
+
+    @classmethod
+    def from_arr(cls, arr):
+        return cls(arr)
+
+    def to_fen(self):
+        fens = []
+        for idx in range(0, self.data.shape[0], 69):
+            fens.append(_array_to_fen(self.data[idx:idx+69]))
+        return fens
+
+    @classmethod
+    def from_fen(cls, fen_str_list):
+
+        data = np.zeros(69 * len(fen_str_list), dtype=np.int32)
+        for (i, idx) in enumerate(range(0, data.shape[0], 69)):
+            data[idx:idx+69] = _fen_to_array(fen_str_list[i])
+
+        return cls(data)
+
+    def to_array(self):
+        return self.data
+
+    @classmethod
+    def from_board(cls, boards):
+        fens = [b.fen() for b in boards]
+        return cls.from_fen(fens)
+
+    def to_board(self):
+        fens = self.to_fen()
+        return [chess.Board(f) for f in fens]
+
+@dataclass(frozen=True)
 class CBoard:
 
     data: np.array
@@ -107,16 +143,7 @@ class CBoard:
         return cls(arr)
 
     def to_fen(self):
-        fen = _array_to_fen(self.data)
-        pieces, to_move, castling, ep = fen.split(" ")
-        castling = list(castling)
-        castling.reverse()
-        castling = "".join(castling)
-
-        if len(castling) == 0:
-            castling = "-"
-
-        return f"{pieces} {to_move} {castling} {ep}"
+        return _array_to_fen(self.data)
 
     @classmethod
     def from_fen(cls, fen_str):
@@ -148,7 +175,16 @@ def _array_to_fen(board_arr):
     array_to_fen(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
     _ffi.release(x)
-    return x_str
+
+    pieces, to_move, castling, ep = x_str.split(" ")
+    castling = list(castling)
+    castling.reverse()
+    castling = "".join(castling)
+
+    if len(castling) == 0:
+        castling = "-"
+
+    return f"{pieces} {to_move} {castling} {ep}"
 
 
 def _move_str_to_array(move_str):
