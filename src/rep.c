@@ -1,8 +1,10 @@
 
 #include "rep.h"
 #include "board.h"
+#include <stdlib.h>
+#include <stdio.h>
 
-void board_to_vec(Board board, int* boards) {
+void board_to_array(int* boards, Board board) {
     int idx = 0;
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
@@ -40,7 +42,6 @@ void board_to_vec(Board board, int* boards) {
             };
 
             if (board.ep == BIT(RF(rank, file))) {
-                printf("Hello!\n");
                 s = 13;
             }
     
@@ -91,16 +92,98 @@ void board_to_vec(Board board, int* boards) {
     
 }
 
-void fen_to_vec(char *fen, int* boards) {
+void array_to_board(Board *board, int* board_arr) {
+
+    board_clear(board);
+
+    int idx = 0;
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+            switch (board_arr[idx]) {
+                case 1: board_set(board, RF(rank, file), WHITE_PAWN); break;
+                case 2: board_set(board, RF(rank, file), WHITE_KNIGHT); break;
+                case 3: board_set(board, RF(rank, file), WHITE_BISHOP); break;
+                case 4: board_set(board, RF(rank, file), WHITE_ROOK); break;
+                case 5: board_set(board, RF(rank, file), WHITE_QUEEN); break;
+                case 6: board_set(board, RF(rank, file), WHITE_KING); break;
+                case 7: board_set(board, RF(rank, file), BLACK_PAWN); break;
+                case 8: board_set(board, RF(rank, file), BLACK_KNIGHT); break;
+                case 9: board_set(board, RF(rank, file), BLACK_BISHOP); break;
+                case 10: board_set(board, RF(rank, file), BLACK_ROOK); break;
+                case 11: board_set(board, RF(rank, file), BLACK_QUEEN); break;
+                case 12: board_set(board, RF(rank, file), BLACK_KING); break;
+                case 13: board->ep = BIT(RF(rank, file));
+                         board->hash ^= HASH_EP[LSB(board->ep) % 8];
+                         board->pawn_hash ^= HASH_EP[LSB(board->ep) % 8];
+                         break;
+                case 0 : break;
+            }
+            idx++;
+        }
+    }
+
+    if (board_arr[idx] == 14) {
+        board->color = WHITE;
+    } else if (board_arr[idx] == 15) {
+        board->color = BLACK;
+    } else {
+        printf("1\n");
+        printf("%i\n", board_arr[idx]);
+        exit(1);
+    }
+    idx++;
+    
+    board->castle = 0;
+    if (board_arr[idx] == 22) {
+        board->castle |= CASTLE_BLACK_QUEEN;
+    } else if (board_arr[idx] != 23) {
+        printf("2");
+        exit(1);
+    }
+    idx++;
+    if (board_arr[idx] == 20) {
+        board->castle |= CASTLE_BLACK_KING;
+    } else if (board_arr[idx] != 21) {
+        printf("3");
+        exit(1);
+    }
+    idx++;
+    if (board_arr[idx] == 18) {
+        board->castle |= CASTLE_WHITE_QUEEN;
+    } else if (board_arr[idx] != 19) {
+        printf("4");
+        exit(1);
+    }
+    idx++;
+    if (board_arr[idx] == 16) {
+        board->castle |= CASTLE_WHITE_KING;
+    } else if (board_arr[idx] != 17) {
+        printf("5");
+        exit(1);
+    }
+    idx++;
+    board->hash ^= HASH_CASTLE[CASTLE_ALL];
+    board->hash ^= HASH_CASTLE[board->castle];
+    board->pawn_hash ^= HASH_CASTLE[CASTLE_ALL];
+    board->pawn_hash ^= HASH_CASTLE[board->castle];
+}
+
+void fen_to_array(int* boards, char *fen) {
     Board board;
     board_load_fen(&board, fen);
-    board_to_vec(board, boards);
+    board_to_array(boards, board);
+}
+
+void array_to_fen(char *fen, int *boards) {
+    Board board;
+    array_to_board(&board, boards);
+    board_to_fen(fen, board);
 }
 
 void board_to_fen(char *fen, Board board) {
-    
+
     int idx = 0;
-    
+
     int blank_count = 0;
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
@@ -143,7 +226,9 @@ void board_to_fen(char *fen, Board board) {
         fen[idx] = '/';
         idx++;
     }
-    fen[idx-1] = ' ';
+    idx--;
+    fen[idx] = ' ';
+    idx++;
 
     if (board.color == WHITE) {
         fen[idx] = 'w';
@@ -154,7 +239,7 @@ void board_to_fen(char *fen, Board board) {
 
     fen[idx] = ' ';
     ++idx;
-   
+
     int castle = board.castle; 
     if (castle >= 8) {
         fen[idx] = 'q';
@@ -175,8 +260,31 @@ void board_to_fen(char *fen, Board board) {
         fen[idx] = 'K';
         idx++;
     }
+
+    fen[idx] = ' ';
+    ++idx;
+
+    if (board.ep == 0) {
+        fen[idx] = '-';
+        idx++;
+    } else {
+    
+        for (int rank = 0; rank < 8; rank++) {
+            for (int file = 0; file < 8; file++) {
+                if (board.ep == (long long int)BIT(RF(rank, file))) {
+                    fen[idx] = 'a' + file;
+                    idx++;
+                    fen[idx] = '1' + rank;
+                    idx++;
+                    break;
+                }
+            }
+        }
+    }
     fen[idx] = '\0';
 }
+
+
 
 void array_to_move_str(char* move_str, int* move_arr) {
     char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};

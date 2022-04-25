@@ -35,7 +35,7 @@ void get_boards(Env *env, int* boards) {
     int idx = 0;
     for (size_t i = 0; i < env->N; i++){
         Board board = env->boards[i];
-        board_to_vec(board, boards);
+        board_to_array(boards, board);
         boards += 69;
     }
 }
@@ -89,25 +89,7 @@ void get_possible_moves(Env* env, int* total_moves) {
 
         for (int i = 0; i < total_legal; i++) {
             char move_str[10];
-            move_to_string(&possible_moves[i], move_str);
-
-            int from_row = move_str[0] - 'a';
-            int from_col = move_str[1] - '1';
-            int to_row = move_str[2] - 'a';
-            int to_col = move_str[3] - '1';
-            
-            int promotion = 0;
-            switch (move_str[4]) {
-                case 'n': promotion = 1; break;
-                case 'b': promotion = 2; break;
-                case 'r': promotion = 3; break;
-                case 'q': promotion = 4; break;
-            }
-            total_moves[idx] = from_row;
-            total_moves[idx + 1] = from_col;
-            total_moves[idx + 2] = to_row;
-            total_moves[idx + 3] = to_col;
-            total_moves[idx + 4] = promotion;
+            move_to_array(&total_moves[idx], possible_moves[i]);
             idx += 5;
         }
     }

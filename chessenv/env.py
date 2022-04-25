@@ -17,7 +17,6 @@ from chessenv_c.lib import (
     step_random_move_env,
     generate_random_move,
     generate_stockfish_move,
-    fen_to_vec,
     reset_boards,
     create_sfarray,
     clean_sfarray,

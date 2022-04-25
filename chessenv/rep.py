@@ -6,7 +6,7 @@ import chess
 import numpy as np
 from cffi import FFI
 
-from chessenv_c.lib import fen_to_vec, move_str_to_array, array_to_move_str
+from chessenv_c.lib import fen_to_array, array_to_fen, move_str_to_array, array_to_move_str
 
 _ffi = FFI()
 
@@ -44,8 +44,8 @@ class CMoves:
 
     def to_cmoves(self):
         cmoves = []
-        for i in range(0, len(self.data), 5):
-            cmoves.append(CMove(self.data[5*i:5*(i+1)]))
+        for i in range(0, self.data.shape[0], 5):
+            cmoves.append(CMove(self.data[i:i+5]))
         return cmoves
     
     @classmethod
@@ -82,57 +82,59 @@ class CMoves:
     def to_array(self):
         return self.data
 
+@dataclass(frozen=True)
 class CBoard:
-
-    piece_symbols = [
-        "e",
-        "P",
-        "N",
-        "B",
-        "R",
-        "Q",
-        "K",
-        "p",
-        "n",
-        "b",
-        "r",
-        "q",
-        "k",
-        "en",
-    ]
-
-    def __init__(self, board):
-        self.board = board
+    
+    data: np.array
 
     def __str__(self):
-        return str(self.board)
+        board = self.to_board()
+        return str(board)
 
     def __repr__(self):
-        return repr(self.board)
+        board = self.to_board()
+        return repr(board)
 
     @classmethod
     def from_arr(cls, arr):
-        board = array_to_board(arr)
-        return cls(board)
+        return cls(arr)
 
     def to_fen(self):
-        return self.board.fen()
+        fen = _array_to_fen(self.data)
+        pieces, to_move, castling, ep = fen.split(" ")
+        castling = list(castling)
+        castling.reverse()
+        castling = ''.join(castling)
+        return f'{pieces} {to_move} {castling} {ep}'
 
     @classmethod
     def from_fen(cls, fen_str):
-        board = chess.Board(fen_str)
-        return cls(board)
+        return cls(_fen_to_array(fen_str))
 
     def to_array(self):
+        return self.data
+
+    @classmethod
+    def from_board(cls, board):
+        return self.from_fen(board.fen())
+
+    def to_board(self):
         fen = self.to_fen()
-        return _fen_to_array(fen)
+        return chess.Board(fen)
 
 def _fen_to_array(fen_str):
     board_arr = np.zeros(shape=(69), dtype=np.int32)
-    x = _ffi.new(f"char[{len(fen_str)}]", bytes(fen_str, encoding="utf-8"))
-    fen_to_vec(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
+    x = _ffi.new(f"char[{len(fen_str) + 10}]", bytes(fen_str, encoding="utf-8"))
+    fen_to_array(_ffi.cast("int *", board_arr.ctypes.data), _ffi.cast("char *", x))
     _ffi.release(x)
     return board_arr
+
+def _array_to_fen(board_arr):
+    x = _ffi.new(f"char[512]", bytes('\0' * 512, encoding="utf-8"))
+    array_to_fen(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
+    x_str = _ffi.string(x).decode("utf-8")
+    _ffi.release(x)
+    return x_str
 
 def _move_str_to_array(move_str):
     move_arr = np.zeros(shape=(5), dtype=np.int32)
@@ -152,57 +154,3 @@ def _array_to_move_str(move_arr):
 
     _ffi.release(x)
     return x_str
-
-def array_to_board(array):
-    board = chess.Board()
-    board._clear_board()
-
-    # Place the pieces, load en-passant
-    piece_squares = arr[:64]
-    for (i, square) in enumerate(chess.SQUARES_180):
-
-        piece_symbol = cls.piece_symbols[int(piece_squares[i])]
-
-        if piece_symbol == "e":
-            continue
-        elif piece_symbol == "en":
-            board.ep_square = square
-        else:
-            piece = chess.Piece.from_symbol(piece_symbol)
-            board._set_piece_at(square, piece.piece_type, piece.color)
-
-    to_move = int(arr[64])
-
-    if to_move == 14:
-        board.turn = chess.WHITE
-    elif to_move == 15:
-        board.turn = chess.BLACK
-    else:
-        raise (ValueError)
-
-    castling_fen = ""
-
-    if _castle_fen(arr, 68, 16, 17):
-        castling_fen += "K"
-
-    if _castle_fen(arr, 67, 18, 19):
-        castling_fen += "Q"
-
-    if _castle_fen(arr, 66, 20, 21):
-        castling_fen += "k"
-
-    if _castle_fen(arr, 65, 22, 23):
-        castling_fen += "q"
-
-    board.set_castling_fen(castling_fen)
-    return board
-
-def _castle_fen(arr, idx, yes_castle, no_castle):
-    white_castle_king = int(arr[68])
-    if white_castle_king == yes_castle:
-        return True
-    elif white_castle_king == no_castle:
-        return False
-    else:
-        raise (ValueError)
-
