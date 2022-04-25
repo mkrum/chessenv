@@ -5,8 +5,6 @@ ffibuilder = FFI()
 
 ffibuilder.cdef(
     """
-typedef struct T T;
-
 typedef unsigned long long bb;
 
 typedef struct {
@@ -37,10 +35,11 @@ typedef struct {
     bb pawn_hash;
 } Board;
 
-struct T {
+struct Env {
     Board boards[1024];
     size_t N;
 };
+typedef struct Env Env;
 
 struct SFPipe {
     int pid;
@@ -56,20 +55,20 @@ struct SFArray {
 };
 typedef struct SFArray SFArray;
 
-void reset_env(T* env, int n);
-void get_boards(T *env, int* boards);
-void print_board(T *env);
-void step_env(T *env, int* moves, int* dones, int* rewards);
-void step_random_move_env(T *env, int* moves, int* dones);
-void generate_random_move(T *env, int* moves);
+void reset_env(Env* env, int n);
+void get_boards(Env *env, int* boards);
+void print_board(Env *env);
+void step_env(Env *env, int* moves, int* dones, int* rewards);
+void step_random_move_env(Env *env, int* moves, int* dones);
+void generate_random_move(Env *env, int* moves);
 void fen_to_vec(char* fen, int* boards);
-void reset_boards(T *env, int *reset);
+void reset_boards(Env *env, int *reset);
 
 void board_to_fen(char *fen, Board board);
-void generate_stockfish_move(T* env, SFArray *sfa, int* moves);
+void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
 void create_sfarray(SFArray *sfa, int depth, size_t N);
 void clean_sfarray(SFArray* arr);
-void get_possible_moves(T* env, int* total_moves);
+void get_possible_moves(Env* env, int* total_moves);
 """
 )
 
@@ -77,8 +76,9 @@ ffibuilder.set_source(
     "chessenv_c",
     """
     #include "chessenv.h"
+    #include "sfarray.h"
 """,
-    sources=["src/chessenv.c"],
+    sources=["src/chessenv.c", "src/sfarray.c"],
     include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
     library_dirs=["/usr/local/lib"],
     extra_compile_args=["-fopenmp"],
