@@ -24,14 +24,14 @@ def test_cmove_rep(x):
 
 @pytest.mark.parametrize("f", fen)
 def test_board_rep(f):
-    assert CBoard.from_arr(CBoard.from_fen(f).to_array()).to_fen() == f
+    assert CBoard.from_array(CBoard.from_fen(f).to_array()).to_fen() == f
     assert CBoard.from_board(CBoard.from_fen(f).to_board()).to_fen() == f
 
 
 def test_board_rep():
     for _ in range(10):
         f = random.sample(fen, 10)
-        assert CBoards.from_arr(CBoards.from_fen(f).to_array()).to_fen() == f
+        assert CBoards.from_array(CBoards.from_fen(f).to_array()).to_fen() == f
         assert CBoards.from_board(CBoards.from_fen(f).to_board()).to_fen() == f
 
 
