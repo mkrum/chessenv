@@ -95,8 +95,16 @@ class CBoards:
 
     data: np.array
 
+    def to_possible_moves(self):
+        moves = []
+        for idx in range(0, self.data.shape[0], 69):
+            moves.append(
+                CMoves.from_array(_array_to_possible(self.data[idx : idx + 69]))
+            )
+        return moves
+
     @classmethod
-    def from_arr(cls, arr):
+    def from_array(cls, arr):
         return cls(arr)
 
     def to_fen(self):
@@ -133,6 +141,7 @@ class CBoard:
     data: np.array
 
     def to_possible_moves(self):
+        # Replace this with a C openmp version
         return CMoves.from_array(_array_to_possible(self.data))
 
     def __str__(self):
@@ -144,7 +153,7 @@ class CBoard:
         return repr(board)
 
     @classmethod
-    def from_arr(cls, arr):
+    def from_array(cls, arr):
         return cls(arr)
 
     def to_fen(self):

@@ -21,7 +21,7 @@ from chessenv_c.lib import (
     get_possible_moves,
 )
 
-from chessenv.rep import CMoves, CBoard
+from chessenv.rep import CMoves, CBoards
 
 
 class CChessEnv:
@@ -46,9 +46,9 @@ class CChessEnv:
     def reset(self):
         self.t = np.zeros(self.n)
         reset_env(self._env, self.n)
-        return self._get_state()
+        return self.get_state()
 
-    def _get_state(self):
+    def get_state(self):
         board_arr = self._make_board_arr()
         get_boards(self._env, self.ffi.cast("int *", board_arr.ctypes.data))
         return board_arr.reshape(self.n, 69)
@@ -56,39 +56,34 @@ class CChessEnv:
     def random(self):
         move_arr = self._make_move_arr()
         generate_random_move(self._env, self.ffi.cast("int *", move_arr.ctypes.data))
-        return np.copy(self.move_arr)
+        return move_arr
 
     def sample_opponent(self):
         return self.random()
 
-    def step_arr(self, move_arr):
-
-        done_one = np.zeros(shape=(self.n), dtype=np.int32)
-        done_two = np.zeros(shape=(self.n), dtype=np.int32)
-
-        my_reward = np.zeros(shape=(self.n), dtype=np.int32)
-        their_reward = np.zeros(shape=(self.n), dtype=np.int32)
-
-        step_env(
-            self._env,
-            self.ffi.cast("int *", move_arr.ctypes.data),
-            self.ffi.cast("int *", done_one.ctypes.data),
-            self.ffi.cast("int *", my_reward.ctypes.data),
-        )
-
-        move_arr = self.sample_opponent()
-
-        step_env(
-            self._env,
-            self.ffi.cast("int *", move_arr.ctypes.data),
-            self.ffi.cast("int *", done_two.ctypes.data),
-            self.ffi.cast("int *", their_reward.ctypes.data),
-        )
-
-        reward = my_reward - (1 - done_one) * (their_reward)
+    def push_moves(self, move_arr):
+        done = self._make_vec_arr()
+        reward = self._make_vec_arr()
 
         self.t += 1
 
+        step_env(
+            self._env,
+            self.ffi.cast("int *", move_arr.ctypes.data),
+            self.ffi.cast("int *", done.ctypes.data),
+            self.ffi.cast("int *", reward.ctypes.data),
+        )
+
+        reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
+        return done, reward
+
+    def step_arr(self, move_arr):
+
+        done_one, my_reward = self.push_moves(move_arr)
+        response = self.sample_opponent()
+        done_two, their_reward = self.push_moves(response)
+
+        reward = my_reward - (1 - done_one) * (their_reward)
         reward[(self.t > self.max_step)] = self.draw_reward
 
         total_done = ((done_one + done_two) > 0) | (self.t > self.max_step)
@@ -97,21 +92,19 @@ class CChessEnv:
 
         reset_boards(self._env, self.ffi.cast("int *", total_done.ctypes.data))
 
-        return self._get_state(), reward, total_done
+        return self.get_state(), reward, total_done
 
-    def get_possible(self):
-        possible_moves = -np.ones(shape=(self.n * 256 * 5), dtype=np.int32)
-        real_poss = -np.ones(shape=(self.n, 256, 5), dtype=np.int32)
-        get_possible_moves(
-            self._env, self.ffi.cast("int *", possible_moves.ctypes.data)
-        )
+    def get_possible_moves(self):
+        move_arr = np.zeros(shape=(self.n * 5 * 256), dtype=np.int32)
+        get_possible_moves(self._env, self.ffi.cast("int *", move_arr.ctypes.data))
+        move_arr = move_arr.reshape(self.n, 256, 5)
 
+        moves = []
         for i in range(self.n):
-            real_poss[i] = possible_moves[256 * 5 * i : 256 * 5 * (i + 1)].reshape(
-                256, 5
-            )
+            valid_moves = move_arr[i, np.sum(move_arr[i], axis=1) > 0]
+            moves.append(CMoves.from_array(valid_moves.flatten()))
 
-        return real_poss
+        return moves
 
     def step(self, moves):
         moves = CMoves.from_str(moves)
@@ -132,22 +125,3 @@ class SFCChessEnv(CChessEnv):
 
     def __del__(self):
         clean_sfarray(self._sfa)
-
-
-if __name__ == "__main__":
-    N = 5
-    env = CChessEnv(N)
-
-    states = env.reset()
-    exit()
-
-    dones = np.zeros(N)
-    t = 0
-    while t < 1000:
-        board = CBoard.from_arr(np.copy(states[0]))
-        moves = env.random()
-        states, rewards, dones = env.step_arr(moves)
-        print(rewards[dones == 1])
-        t += 1
-
-    print(t)

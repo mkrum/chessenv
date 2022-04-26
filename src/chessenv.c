@@ -44,7 +44,7 @@ void step_env(Env *env, int *moves, int *dones, int *reward) {
 
     bb_init();
 #pragma omp parallel for
-    for (size_t i = 0; i < env->N; i += 1) {
+    for (size_t i = 0; i < env->N; i++) {
 
         Move move;
         array_to_move(&move, &moves[5 * i]);
