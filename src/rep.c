@@ -1,8 +1,11 @@
 
-#include "rep.h"
-#include "board.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "rep.h"
+#include "board.h"
+#include "gen.h"
+
 
 void board_to_array(int* boards, Board board) {
     int idx = 0;
@@ -283,8 +286,6 @@ void board_to_fen(char *fen, Board board) {
     fen[idx] = '\0';
 }
 
-
-
 void array_to_move_str(char* move_str, int* move_arr) {
     char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
     char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
@@ -329,4 +330,26 @@ void move_to_array(int* move_arr, Move move) {
     char move_str[10];
     move_to_string(&move, move_str);
     move_str_to_array(move_arr, move_str);
+}
+
+void array_to_possible(int *move_arr, int *board_arr) {
+    char fen[512];
+    array_to_fen(fen, board_arr);
+    fen_to_possible(move_arr, fen);
+}
+
+void fen_to_possible(int *move_arr, char *fen) {
+    bb_init();
+    Board board;
+    board_load_fen(&board, fen);
+
+    Move possible_moves[MAX_MOVES];
+    int total_legal = gen_legal_moves(&board, possible_moves);
+
+    int idx = 0;
+    for (int i = 0; i < total_legal; i++) {
+        char move_str[10];
+        move_to_array(&move_arr[idx], possible_moves[i]);
+        idx += 5;
+    }
 }

@@ -46,6 +46,9 @@ void array_to_fen(char* fen, int* boards);
 
 void move_str_to_array(int* move_arr, char *move_str);
 void array_to_move_str(char* move_str, int* move_arr);
+
+void array_to_possible(int * move_arr, int *board_arr);
+void fen_to_possible(int *move_arr, char *fen);
 """
 )
 

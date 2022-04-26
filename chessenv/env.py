@@ -10,11 +10,9 @@ from typing import List
 
 from chessenv_c.lib import (
     reset_env,
-    print_board,
     get_boards,
     step_env,
     reset_env,
-    step_random_move_env,
     generate_random_move,
     generate_stockfish_move,
     reset_boards,
@@ -23,7 +21,7 @@ from chessenv_c.lib import (
     get_possible_moves,
 )
 
-from chessenv.rep import CMove, CBoard
+from chessenv.rep import CMoves, CBoard
 
 
 class CChessEnv:
@@ -32,13 +30,18 @@ class CChessEnv:
         self.n = n
         self.max_step = max_step
         self.draw_reward = draw_reward
-        self._env = chessenv_c.ffi.new("T *")
+        self._env = chessenv_c.ffi.new("Env *")
 
-        self.board_arr = np.zeros(shape=(self.n * 69), dtype=np.int32)
-        self.move_arr = np.zeros(shape=(self.n * 5), dtype=np.int32)
-        self.done_arr = np.zeros(shape=(self.n), dtype=np.int32)
-        self.reward_arr = np.zeros(shape=(self.n), dtype=np.int32)
         self.t = np.zeros(self.n)
+
+    def _make_board_arr(self):
+        return np.zeros(shape=(self.n * 69), dtype=np.int32)
+
+    def _make_move_arr(self):
+        return np.zeros(shape=(self.n * 5), dtype=np.int32)
+
+    def _make_vec_arr(self):
+        return np.zeros(shape=(self.n), dtype=np.int32)
 
     def reset(self):
         self.t = np.zeros(self.n)
@@ -46,20 +49,19 @@ class CChessEnv:
         return self._get_state()
 
     def _get_state(self):
-        get_boards(self._env, self.ffi.cast("int *", self.board_arr.ctypes.data))
-        return self.board_arr.reshape(self.n, 69)
+        board_arr = self._make_board_arr()
+        get_boards(self._env, self.ffi.cast("int *", board_arr.ctypes.data))
+        return board_arr.reshape(self.n, 69)
 
     def random(self):
-        generate_random_move(
-            self._env, self.ffi.cast("int *", self.move_arr.ctypes.data)
-        )
+        move_arr = self._make_move_arr()
+        generate_random_move(self._env, self.ffi.cast("int *", move_arr.ctypes.data))
         return np.copy(self.move_arr)
 
     def sample_opponent(self):
         return self.random()
 
     def step_arr(self, move_arr):
-        self.move_arr = np.copy(move_arr)
 
         done_one = np.zeros(shape=(self.n), dtype=np.int32)
         done_two = np.zeros(shape=(self.n), dtype=np.int32)
@@ -69,16 +71,16 @@ class CChessEnv:
 
         step_env(
             self._env,
-            self.ffi.cast("int *", self.move_arr.ctypes.data),
+            self.ffi.cast("int *", move_arr.ctypes.data),
             self.ffi.cast("int *", done_one.ctypes.data),
             self.ffi.cast("int *", my_reward.ctypes.data),
         )
 
-        self.move_arr = self.sample_opponent()
+        move_arr = self.sample_opponent()
 
         step_env(
             self._env,
-            self.ffi.cast("int *", self.move_arr.ctypes.data),
+            self.ffi.cast("int *", move_arr.ctypes.data),
             self.ffi.cast("int *", done_two.ctypes.data),
             self.ffi.cast("int *", their_reward.ctypes.data),
         )
@@ -112,7 +114,7 @@ class CChessEnv:
         return real_poss
 
     def step(self, moves):
-        moves = CMove.from_str(moves)
+        moves = CMoves.from_str(moves)
         return self.step_arr(moves.data)
 
 
@@ -133,15 +135,10 @@ class SFCChessEnv(CChessEnv):
 
 
 if __name__ == "__main__":
-
     N = 5
-    env = CChessEnv(N)  # , 1)
+    env = CChessEnv(N)
 
     states = env.reset()
-
-    print(possible_moves[0])
-    print(possible_moves[1])
-
     exit()
 
     dones = np.zeros(N)

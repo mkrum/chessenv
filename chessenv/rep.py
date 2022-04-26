@@ -10,6 +10,7 @@ from chessenv_c.lib import (
     array_to_fen,
     move_str_to_array,
     array_to_move_str,
+    array_to_possible,
 )
 
 _ffi = FFI()
@@ -101,7 +102,7 @@ class CBoards:
     def to_fen(self):
         fens = []
         for idx in range(0, self.data.shape[0], 69):
-            fens.append(_array_to_fen(self.data[idx:idx+69]))
+            fens.append(_array_to_fen(self.data[idx : idx + 69]))
         return fens
 
     @classmethod
@@ -109,7 +110,7 @@ class CBoards:
 
         data = np.zeros(69 * len(fen_str_list), dtype=np.int32)
         for (i, idx) in enumerate(range(0, data.shape[0], 69)):
-            data[idx:idx+69] = _fen_to_array(fen_str_list[i])
+            data[idx : idx + 69] = _fen_to_array(fen_str_list[i])
 
         return cls(data)
 
@@ -125,10 +126,14 @@ class CBoards:
         fens = self.to_fen()
         return [chess.Board(f) for f in fens]
 
+
 @dataclass(frozen=True)
 class CBoard:
 
     data: np.array
+
+    def to_possible_moves(self):
+        return CMoves.from_array(_array_to_possible(self.data))
 
     def __str__(self):
         board = self.to_board()
@@ -206,3 +211,14 @@ def _array_to_move_str(move_arr):
 
     _ffi.release(x)
     return x_str
+
+
+def _array_to_possible(data):
+    move_arr = np.zeros(shape=(256 * 5), dtype=np.int32)
+    array_to_possible(
+        _ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("int*", data.ctypes.data)
+    )
+    move_arr = move_arr.reshape(256, 5)
+    move_arr = move_arr[np.sum(move_arr, axis=1) > 0]
+    move_arr = move_arr.flatten()
+    return move_arr
