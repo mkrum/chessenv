@@ -11,9 +11,103 @@ from chessenv_c.lib import (
     move_str_to_array,
     array_to_move_str,
     array_to_possible,
+    move_arr_to_int,
+    int_to_move_arr,
 )
 
 _ffi = FFI()
+
+
+def square_to_ints(square):
+    cols = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    col, row = list(square)
+    col = cols.index(col)
+    row = int(row) - 1
+    return row, col
+
+
+def move_to_array(move_str):
+    from_square = move_str[:2]
+    to_square = move_str[2:4]
+    promos = ["r", "b", "n", "q"]
+    promo_int = 0
+    if len(move_str) == 5:
+        promo_int = promos.index(move_str[5])
+
+    return np.array(
+        [*square_to_ints(from_square), *square_to_ints(to_square), promo_int]
+    )
+
+
+def get_offset(move_arr):
+    return (move_arr[0] - move_arr[2], move_arr[1] - move_arr[3])
+
+
+def pair_to_sum(x, y, z):
+    return x * 10000 + (y + 8) * 100 + z
+
+
+def sum_to_pair(sum_val):
+    x = sum_val // 10000
+    y = (sum_val - x * 10000) // 100
+    z = sum_val - ((x * 10000) + (y * 100))
+    return (x, y - 8, z)
+
+
+unique_offsets = []
+for x in range(-7, 8):
+    if x != 0:
+        unique_offsets.append((x, 0, 0))
+        unique_offsets.append((0, x, 0))
+        unique_offsets.append((x, x, 0))
+        unique_offsets.append((x, -1 * x, 0))
+
+unique_offsets.append((2, 1, 0))
+unique_offsets.append((2, -1, 0))
+unique_offsets.append((1, 2, 0))
+unique_offsets.append((-1, 2, 0))
+unique_offsets.append((-2, 1, 0))
+unique_offsets.append((-2, -1, 0))
+unique_offsets.append((1, -2, 0))
+unique_offsets.append((-1, -2, 0))
+
+for promo in [1, 2, 3, 4]:
+    unique_offsets.append((0, 1, promo))
+    unique_offsets.append((1, 1, promo))
+    unique_offsets.append((-1, 1, promo))
+    unique_offsets.append((0, -1, promo))
+    unique_offsets.append((1, -1, promo))
+    unique_offsets.append((-1, -1, promo))
+
+unique_offsets = list(map(lambda x: pair_to_sum(*x), unique_offsets))
+
+TOTAL_OFF = 88
+
+def move_to_int(move_str):
+    move = CMove.from_str(move_str)
+    move_arr = move.to_array()
+    promo = move_arr[-1]
+    offset_x, offset_y = get_offset(move_arr)
+    return (
+        (8 * move_arr[0] + move_arr[1]) * len(unique_offsets)
+    ) + unique_offsets.index(pair_to_sum(offset_x, offset_y, promo))
+
+
+def int_to_move(move_int):
+
+    first_int = move_int // TOTAL_OFF
+    move_arr = np.int32(np.zeros(5))
+    move_arr[0] = first_int // 8
+    move_arr[1] = first_int - (8 * move_arr[0])
+
+    second_int = move_int - first_int * len(unique_offsets)
+
+    x_offset, y_offset, promo = sum_to_pair(unique_offsets[second_int])
+    move_arr[2] = move_arr[0] - x_offset
+    move_arr[3] = move_arr[1] - y_offset
+    move_arr[4] = promo
+
+    return CMove.from_array(move_arr).to_str()
 
 
 @dataclass(frozen=True)
@@ -42,6 +136,13 @@ class CMove:
 
     def to_array(self):
         return self.data
+
+    @classmethod
+    def from_int(cls, move_int):
+        return cls(_int_to_move_arr(move_int))
+
+    def to_int(self):
+        return _move_arr_to_int(self.data)
 
 
 @dataclass(frozen=True)
@@ -230,4 +331,23 @@ def _array_to_possible(data):
     move_arr = move_arr.reshape(256, 5)
     move_arr = move_arr[np.sum(move_arr, axis=1) > 0]
     move_arr = move_arr.flatten()
+    return move_arr
+
+
+def _move_arr_to_int(move_arr):
+    move_int = np.zeros(shape=(1,), dtype=np.int32)
+    move_arr_to_int(
+        _ffi.cast("int *", move_int.ctypes.data),
+        _ffi.cast("int*", move_arr.ctypes.data),
+    )
+    return move_int[0]
+
+
+def _int_to_move_arr(move_int):
+    move_int = np.array([move_int])
+    move_arr = np.zeros(shape=(5,), dtype=np.int32)
+    int_to_move_arr(
+        _ffi.cast("int*", move_arr.ctypes.data),
+        _ffi.cast("int *", move_int.ctypes.data),
+    )
     return move_arr

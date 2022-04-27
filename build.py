@@ -49,6 +49,9 @@ void array_to_move_str(char* move_str, int* move_arr);
 
 void array_to_possible(int * move_arr, int *board_arr);
 void fen_to_possible(int *move_arr, char *fen);
+
+void move_arr_to_int(int *move_int, int*move_arr);
+void int_to_move_arr(int *move_int, int*move_arr);
 """
 )
 
@@ -58,8 +61,9 @@ ffibuilder.set_source(
     #include "chessenv.h"
     #include "sfarray.h"
     #include "rep.h"
+    #include "move_map.h"
 """,
-    sources=["src/chessenv.c", "src/sfarray.c", "src/rep.c"],
+    sources=["src/chessenv.c", "src/sfarray.c", "src/rep.c", "src/move_map.c"],
     include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
     library_dirs=["/usr/local/lib"],
     extra_compile_args=["-fopenmp"],

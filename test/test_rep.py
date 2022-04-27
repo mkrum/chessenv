@@ -1,5 +1,5 @@
 import pytest
-from chessenv.rep import CBoard, CBoards, CMoves, CMove
+from chessenv.rep import CBoard, CBoards, CMoves, CMove, move_to_int, int_to_move
 import random
 
 with open("test/test_data.csv", "r") as test_data:
@@ -20,6 +20,7 @@ def test_cmoves_rep():
 def test_cmove_rep(x):
     assert x == CMove.from_array(CMove.from_str(x).to_array()).to_str()
     assert x == CMove.from_move(CMove.from_str(x).to_move()).to_str()
+    assert x == CMove.from_int(CMove.from_str(x).to_int()).to_str()
 
 
 @pytest.mark.parametrize("f", fen)
