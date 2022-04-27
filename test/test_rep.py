@@ -1,5 +1,5 @@
 import pytest
-from chessenv.rep import CBoard, CBoards, CMoves, CMove, move_to_int, int_to_move
+from chessenv.rep import CBoard, CBoards, CMoves, CMove
 import random
 
 with open("test/test_data.csv", "r") as test_data:
