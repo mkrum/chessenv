@@ -8,10 +8,12 @@
 
 #include "chessenv.h"
 #include "rep.h"
+#include "move_map.h"
 
 #include "board.h"
 #include "move.h" 
 #include "gen.h"
+
 
 void reset_env(Env* env, int n) {
 
@@ -20,9 +22,29 @@ void reset_env(Env* env, int n) {
 
     for (int i = 0; i < n; i++){
         board_reset(&env->boards[i]);
+        
     }
     env->N = n;
 }
+
+void get_mask(Env* env, int *move_mask) {
+#pragma omp parallel for
+    for (size_t i = 0; i < env->N; i++){
+
+        Move possible_moves[MAX_MOVES];
+        int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
+
+        for (int j = 0; j < total_legal; j++) {
+            int move_arr[5];
+            move_to_array(move_arr, possible_moves[j]);
+
+            int move_int;
+            move_arr_to_int(&move_int, move_arr);
+            move_mask[i * 64 * OFF_TOTAL + move_int] = 1;
+        }
+    }
+}
+
 
 void print_board(Env *env) {
     for (int i = 0; i < env->N; i++){
@@ -48,35 +70,16 @@ void step_env(Env *env, int *moves, int *dones, int *reward) {
 
         Move move;
         array_to_move(&move, &moves[5 * i]);
+        make_move(&env->boards[i], &move);
 
         Move possible_moves[MAX_MOVES];
-        int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
+        int total = gen_legal_moves(&env->boards[i], possible_moves);
 
-        int legal = 0;
-        for (int i = 0; i < total_legal; i++) {
-            if ((move.src == possible_moves[i].src) && (move.dst == possible_moves[i].dst)) {
-                legal = 1;
-            }
-        }
-
-        Undo undo;
-        if (legal) {
-            do_move(&env->boards[i], &move, &undo);
-
-            int total = gen_legal_moves(&env->boards[i], possible_moves);
-            dones[i] = (total == 0);
-            reward[i] = (total == 0);
-
-        } else {
-            // just a dummy move
-            do_move(&env->boards[i], &possible_moves[0], &undo);
-
-            reward[i] = -1;
-            dones[i] = 1;
-        }
-
+        dones[i] = (total == 0);
+        reward[i] = (total == 0);
     }
 }
+
 
 void get_possible_moves(Env* env, int* total_moves) {
 

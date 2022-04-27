@@ -28,14 +28,15 @@ struct SFArray {
 };
 typedef struct SFArray SFArray;
 
+void get_mask(Env* env, int *move_mask);
 void reset_env(Env* env, int n);
+void print_board(Env* env);
+void step_env(Env *env, int* moves, int *dones, int *reward);
 void get_boards(Env *env, int* boards);
-void print_board(Env *env);
-void step_env(Env *env, int* moves, int* dones, int* rewards);
-void step_random_move_env(Env *env, int* moves, int* dones);
-void generate_random_move(Env *env, int* moves);
+void step_random_move_env(Env *env, int* boards, int *dones);
+void generate_random_move(Env *env, int* boards);
 void reset_boards(Env *env, int *reset);
-void get_possible_moves(Env* env, int* total_moves);
+void get_possible_moves(Env* env, int*);
 
 void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
 void create_sfarray(SFArray *sfa, int depth, size_t N);

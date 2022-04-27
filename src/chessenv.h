@@ -6,6 +6,7 @@ struct Env {
 };
 typedef struct Env Env;
 
+void get_mask(Env* env, int *move_mask);
 void reset_env(Env* env, int n);
 void print_board(Env* env);
 void step_env(Env *env, int* moves, int *dones, int *reward);

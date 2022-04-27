@@ -10,7 +10,9 @@ from typing import List
 
 from chessenv_c.lib import (
     reset_env,
+    get_mask,
     get_boards,
+    step_env,
     step_env,
     reset_env,
     generate_random_move,
@@ -43,15 +45,24 @@ class CChessEnv:
     def _make_vec_arr(self):
         return np.zeros(shape=(self.n), dtype=np.int32)
 
+    def _make_mask_arr(self):
+        return np.zeros(shape=(self.n * 64 * 88), dtype=np.int32)
+
     def reset(self):
         self.t = np.zeros(self.n)
         reset_env(self._env, self.n)
-        return self.get_state()
+        mask = self.get_mask()
+        return self.get_state(), mask
 
     def get_state(self):
         board_arr = self._make_board_arr()
         get_boards(self._env, self.ffi.cast("int *", board_arr.ctypes.data))
         return board_arr.reshape(self.n, 69)
+
+    def get_mask(self):
+        mask_arr = self._make_mask_arr()
+        get_mask(self._env, self.ffi.cast("int *", mask_arr.ctypes.data))
+        return mask_arr.reshape(self.n, 88 * 64)
 
     def random(self):
         move_arr = self._make_move_arr()
@@ -92,7 +103,9 @@ class CChessEnv:
 
         reset_boards(self._env, self.ffi.cast("int *", total_done.ctypes.data))
 
-        return self.get_state(), reward, total_done
+        mask = self.get_mask()
+
+        return self.get_state(), mask, reward, total_done
 
     def get_possible_moves(self):
         move_arr = np.zeros(shape=(self.n * 5 * 256), dtype=np.int32)

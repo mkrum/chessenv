@@ -1,7 +1,6 @@
 
 #include "math.h"
-
-#define OFF_TOTAL 88
+#include "move_map.h"
 
 void move_arr_to_int(int *move_int, int*move_arr) {
     int offset_x = move_arr[0]  - move_arr[2];

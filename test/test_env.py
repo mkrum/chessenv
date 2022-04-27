@@ -1,14 +1,16 @@
 import chess
-from chessenv import CChessEnv, CBoards, CMoves
+import numpy as np
+from chessenv import CChessEnv, CBoards, CMoves, CMove
 
 
 def test_env():
     env = CChessEnv(16)
 
-    states = env.reset().flatten()
+    states, mask = env.reset()
+    states = states.flatten()
     boards = CBoards.from_array(states).to_board()
 
-    for _ in range(500):
+    for step in range(200):
 
         random_moves_arr = env.sample_opponent()
         random_moves = CMoves.from_array(random_moves_arr).to_move()
@@ -29,8 +31,17 @@ def test_env():
 
         assert (states == recon_board).all()
 
+        masks = env.get_mask()
         moves = env.get_possible_moves()
 
-        for (m, b) in zip(moves, boards):
+        for (mask, m, b) in zip(masks, moves, boards):
             py_board = set(b.legal_moves)
             assert py_board == set(m.to_move())
+
+            for i in np.nonzero(mask):
+                assert CMove.from_int(i).to_move() in py_board
+
+            for b in list(py_board):
+                assert mask[CMove.from_move(b).to_int()] == 1
+            
+
