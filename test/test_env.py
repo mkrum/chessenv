@@ -43,5 +43,3 @@ def test_env():
 
             for b in list(py_board):
                 assert mask[CMove.from_move(b).to_int()] == 1
-            
-

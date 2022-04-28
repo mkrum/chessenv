@@ -13,7 +13,6 @@ from chessenv_c.lib import (
     get_mask,
     get_boards,
     step_env,
-    step_env,
     reset_env,
     generate_random_move,
     generate_stockfish_move,
@@ -88,6 +87,11 @@ class CChessEnv:
         reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
         return done, reward
 
+    def reset_boards(self, done):
+        done = np.int32(done)
+        reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
+        self.t[(done == 1)] = 0
+
     def step_arr(self, move_arr):
 
         done_one, my_reward = self.push_moves(move_arr)
@@ -95,17 +99,18 @@ class CChessEnv:
         done_two, their_reward = self.push_moves(response)
 
         reward = my_reward - (1 - done_one) * (their_reward)
+
         reward[(self.t > self.max_step)] = self.draw_reward
 
         total_done = ((done_one + done_two) > 0) | (self.t > self.max_step)
-        total_done = np.int32(total_done)
         self.t[(total_done == 1)] = 0
 
-        reset_boards(self._env, self.ffi.cast("int *", total_done.ctypes.data))
+        self.reset_boards(total_done)
 
         mask = self.get_mask()
+        state = self.get_state()
 
-        return self.get_state(), mask, reward, total_done
+        return state, mask, reward, total_done
 
     def get_possible_moves(self):
         move_arr = np.zeros(shape=(self.n * 5 * 256), dtype=np.int32)
