@@ -40,7 +40,7 @@ class CChessEnv:
         return np.zeros(shape=(self.n * 69), dtype=np.int32)
 
     def _make_move_arr(self):
-        return np.zeros(shape=(self.n * 5), dtype=np.int32)
+        return np.zeros(shape=(self.n,), dtype=np.int32)
 
     def _make_vec_arr(self):
         return np.zeros(shape=(self.n), dtype=np.int32)
@@ -88,7 +88,7 @@ class CChessEnv:
         reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
         return done, reward
 
-    def step_arr(self, move_arr):
+    def step(self, move_arr):
 
         done_one, my_reward = self.push_moves(move_arr)
         response = self.sample_opponent()
@@ -119,9 +119,9 @@ class CChessEnv:
 
         return moves
 
-    def step(self, moves):
-        moves = CMoves.from_str(moves)
-        return self.step_arr(moves.data)
+    def step_moves(self, moves):
+        move_arr = CMoves.from_str(moves).to_int()
+        return self.step_arr(move_arr)
 
 
 class SFCChessEnv(CChessEnv):

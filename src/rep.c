@@ -7,16 +7,6 @@
 #include "gen.h"
 
 
-int move_to_int(Move move) {
-	char src = move.src;
-	char dst = move.dst;
-
-}
-
-Move int_to_move(int move_int) {
-
-}
-
 void board_to_array(int* boards, Board board) {
     int idx = 0;
     for (int rank = 7; rank >= 0; rank--) {

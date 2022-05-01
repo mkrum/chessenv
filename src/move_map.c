@@ -1,6 +1,19 @@
 
 #include "math.h"
+#include "rep.h"
 #include "move_map.h"
+
+void int_to_move(Move *move, int move_int) {
+    int move_arr[5];
+    int_to_move_arr(move_arr, &move_int);
+    array_to_move(move, move_arr);
+}
+
+void move_to_int(int* move_int, Move move) {
+    int move_arr[6];
+    move_to_array(move_arr, move);
+    move_arr_to_int(move_int, move_arr);
+}
 
 void move_arr_to_int(int *move_int, int*move_arr) {
     int offset_x = move_arr[0]  - move_arr[2];

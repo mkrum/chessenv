@@ -57,6 +57,16 @@ class CMove:
 class CMoves:
 
     data: np.array
+    
+    @classmethod
+    def from_int(cls, move_ints):
+        return cls(np.concatenate([CMove.from_int(m).to_array() for m in move_ints]))
+
+    def to_int(self):
+        cmoves = []
+        for i in range(0, self.data.shape[0], 5):
+            cmoves.append(CMove(self.data[i : i + 5]).to_int())
+        return np.array(cmoves)
 
     def to_cmoves(self):
         cmoves = []

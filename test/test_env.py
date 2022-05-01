@@ -13,7 +13,7 @@ def test_env():
     for step in range(200):
 
         random_moves_arr = env.sample_opponent()
-        random_moves = CMoves.from_array(random_moves_arr).to_move()
+        random_moves = CMoves.from_int(random_moves_arr).to_move()
 
         done, _ = env.push_moves(random_moves_arr)
 

@@ -64,12 +64,11 @@ void get_boards(Env *env, int* boards) {
 
 void step_env(Env *env, int *moves, int *dones, int *reward) {
 
-    bb_init();
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
 
         Move move;
-        array_to_move(&move, &moves[5 * i]);
+        int_to_move(&move, moves[i]);
         make_move(&env->boards[i], &move);
 
         Move possible_moves[MAX_MOVES];
@@ -123,7 +122,8 @@ void generate_random_move(Env *env, int *moves) {
 
         int random_idx = rand() % total;
         Move move = possible_moves[random_idx];
-        move_to_array(&moves[5 * i], move);
+        
+        move_to_int(&moves[i], move);
     }
 }
 

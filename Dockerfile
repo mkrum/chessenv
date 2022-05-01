@@ -13,10 +13,8 @@ RUN pip3 install cffi numpy
 
 WORKDIR /root/
 ADD build.py build.py
-ADD main.py main.py
-ADD chessenv.c chessenv.c
-ADD chessenv.h chessenv.h
+ADD setup.py setup.py
+ADD src /root/src
+ADD chessenv /root/chessenv
 
-RUN python3 build.py
-ENV OMP_NUM_THREADS 4
-RUN python3 main.py
+RUN pip3 install -e .
