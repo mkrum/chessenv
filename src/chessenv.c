@@ -82,7 +82,6 @@ void step_env(Env *env, int *moves, int *dones, int *reward) {
 
 void get_possible_moves(Env* env, int* total_moves) {
 
-    bb_init();
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
 
@@ -109,7 +108,6 @@ void reset_boards(Env *env, int *reset) {
 
 void generate_random_move(Env *env, int *moves) {
 
-    bb_init();
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
         Move possible_moves[MAX_MOVES];
