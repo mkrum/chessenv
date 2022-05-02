@@ -2,6 +2,55 @@
 #include "math.h"
 #include "rep.h"
 #include "move_map.h"
+#include <string.h>
+
+void legal_mask_to_move_arr_mask(int *move_arr_mask, int *legal_mask, int N) {
+
+#pragma omp parallel for
+    for (size_t i = 0; i < N; i++) {
+        int idx = 0;
+        for (size_t j = 0; j < (64 * OFF_TOTAL); j++) {
+            if (legal_mask[i * 64 * OFF_TOTAL + j] == 1) {
+                
+                int move_arr[5];
+                int_to_move_arr(move_arr, &j);
+
+                int move_rep[2] = {5, 9};
+                move_arr_to_move_rep(move_rep, move_arr);
+
+                move_arr_mask[i * 2 * 256 + idx] = move_rep[0];
+                move_arr_mask[i * 2 * 256 + idx + 1] = move_rep[1];
+
+                idx += 2;
+            }
+        }
+    }
+}
+
+void move_arr_to_move_rep(int *move_rep, int *move_arr) {
+
+    char move_str[6];
+    array_to_move_str(move_str, move_arr);
+
+    char sub_move[4];
+    sub_move[0] = move_str[0];
+    sub_move[1] = move_str[1];
+    sub_move[2] = '\0';
+
+    move_rep[0] = move_str_to_rep_int(sub_move);
+
+    sub_move[0] = move_str[2];
+    sub_move[1] = move_str[3];
+    if (move_str[4] == ' ') {
+        sub_move[2] = '\0';
+    } else {
+        sub_move[2] = move_str[4];
+        sub_move[3] = '\0';
+    }
+
+    move_rep[1] = move_str_to_rep_int(sub_move);
+}
+
 
 void int_to_move(Move *move, int move_int) {
     int move_arr[5];
@@ -251,4 +300,135 @@ int offset_id_to_index(int offset_id) {
         case -9296: out = 87; break;
     }
     return out;
+}
+
+int move_str_to_rep_int(char *move_str) {
+if (strcmp(move_str, "a1") == 0){return 1;}
+if (strcmp(move_str, "a2") == 0){return 2;}
+if (strcmp(move_str, "a3") == 0){return 3;}
+if (strcmp(move_str, "a4") == 0){return 4;}
+if (strcmp(move_str, "a5") == 0){return 5;}
+if (strcmp(move_str, "a6") == 0){return 6;}
+if (strcmp(move_str, "a7") == 0){return 7;}
+if (strcmp(move_str, "a8") == 0){return 8;}
+if (strcmp(move_str, "b1") == 0){return 9;}
+if (strcmp(move_str, "b2") == 0){return 10;}
+if (strcmp(move_str, "b3") == 0){return 11;}
+if (strcmp(move_str, "b4") == 0){return 12;}
+if (strcmp(move_str, "b5") == 0){return 13;}
+if (strcmp(move_str, "b6") == 0){return 14;}
+if (strcmp(move_str, "b7") == 0){return 15;}
+if (strcmp(move_str, "b8") == 0){return 16;}
+if (strcmp(move_str, "c1") == 0){return 17;}
+if (strcmp(move_str, "c2") == 0){return 18;}
+if (strcmp(move_str, "c3") == 0){return 19;}
+if (strcmp(move_str, "c4") == 0){return 20;}
+if (strcmp(move_str, "c5") == 0){return 21;}
+if (strcmp(move_str, "c6") == 0){return 22;}
+if (strcmp(move_str, "c7") == 0){return 23;}
+if (strcmp(move_str, "c8") == 0){return 24;}
+if (strcmp(move_str, "d1") == 0){return 25;}
+if (strcmp(move_str, "d2") == 0){return 26;}
+if (strcmp(move_str, "d3") == 0){return 27;}
+if (strcmp(move_str, "d4") == 0){return 28;}
+if (strcmp(move_str, "d5") == 0){return 29;}
+if (strcmp(move_str, "d6") == 0){return 30;}
+if (strcmp(move_str, "d7") == 0){return 31;}
+if (strcmp(move_str, "d8") == 0){return 32;}
+if (strcmp(move_str, "e1") == 0){return 33;}
+if (strcmp(move_str, "e2") == 0){return 34;}
+if (strcmp(move_str, "e3") == 0){return 35;}
+if (strcmp(move_str, "e4") == 0){return 36;}
+if (strcmp(move_str, "e5") == 0){return 37;}
+if (strcmp(move_str, "e6") == 0){return 38;}
+if (strcmp(move_str, "e7") == 0){return 39;}
+if (strcmp(move_str, "e8") == 0){return 40;}
+if (strcmp(move_str, "f1") == 0){return 41;}
+if (strcmp(move_str, "f2") == 0){return 42;}
+if (strcmp(move_str, "f3") == 0){return 43;}
+if (strcmp(move_str, "f4") == 0){return 44;}
+if (strcmp(move_str, "f5") == 0){return 45;}
+if (strcmp(move_str, "f6") == 0){return 46;}
+if (strcmp(move_str, "f7") == 0){return 47;}
+if (strcmp(move_str, "f8") == 0){return 48;}
+if (strcmp(move_str, "g1") == 0){return 49;}
+if (strcmp(move_str, "g2") == 0){return 50;}
+if (strcmp(move_str, "g3") == 0){return 51;}
+if (strcmp(move_str, "g4") == 0){return 52;}
+if (strcmp(move_str, "g5") == 0){return 53;}
+if (strcmp(move_str, "g6") == 0){return 54;}
+if (strcmp(move_str, "g7") == 0){return 55;}
+if (strcmp(move_str, "g8") == 0){return 56;}
+if (strcmp(move_str, "h1") == 0){return 57;}
+if (strcmp(move_str, "h2") == 0){return 58;}
+if (strcmp(move_str, "h3") == 0){return 59;}
+if (strcmp(move_str, "h4") == 0){return 60;}
+if (strcmp(move_str, "h5") == 0){return 61;}
+if (strcmp(move_str, "h6") == 0){return 62;}
+if (strcmp(move_str, "h7") == 0){return 63;}
+if (strcmp(move_str, "h8") == 0){return 64;}
+if (strcmp(move_str, "a1r") == 0){return 65;}
+if (strcmp(move_str, "a1n") == 0){return 66;}
+if (strcmp(move_str, "a1b") == 0){return 67;}
+if (strcmp(move_str, "a1q") == 0){return 68;}
+if (strcmp(move_str, "b1r") == 0){return 69;}
+if (strcmp(move_str, "b1n") == 0){return 70;}
+if (strcmp(move_str, "b1b") == 0){return 71;}
+if (strcmp(move_str, "b1q") == 0){return 72;}
+if (strcmp(move_str, "c1r") == 0){return 73;}
+if (strcmp(move_str, "c1n") == 0){return 74;}
+if (strcmp(move_str, "c1b") == 0){return 75;}
+if (strcmp(move_str, "c1q") == 0){return 76;}
+if (strcmp(move_str, "d1r") == 0){return 77;}
+if (strcmp(move_str, "d1n") == 0){return 78;}
+if (strcmp(move_str, "d1b") == 0){return 79;}
+if (strcmp(move_str, "d1q") == 0){return 80;}
+if (strcmp(move_str, "e1r") == 0){return 81;}
+if (strcmp(move_str, "e1n") == 0){return 82;}
+if (strcmp(move_str, "e1b") == 0){return 83;}
+if (strcmp(move_str, "e1q") == 0){return 84;}
+if (strcmp(move_str, "f1r") == 0){return 85;}
+if (strcmp(move_str, "f1n") == 0){return 86;}
+if (strcmp(move_str, "f1b") == 0){return 87;}
+if (strcmp(move_str, "f1q") == 0){return 88;}
+if (strcmp(move_str, "g1r") == 0){return 89;}
+if (strcmp(move_str, "g1n") == 0){return 90;}
+if (strcmp(move_str, "g1b") == 0){return 91;}
+if (strcmp(move_str, "g1q") == 0){return 92;}
+if (strcmp(move_str, "h1r") == 0){return 93;}
+if (strcmp(move_str, "h1n") == 0){return 94;}
+if (strcmp(move_str, "h1b") == 0){return 95;}
+if (strcmp(move_str, "h1q") == 0){return 96;}
+if (strcmp(move_str, "a8r") == 0){return 97;}
+if (strcmp(move_str, "a8n") == 0){return 98;}
+if (strcmp(move_str, "a8b") == 0){return 99;}
+if (strcmp(move_str, "a8q") == 0){return 100;}
+if (strcmp(move_str, "b8r") == 0){return 101;}
+if (strcmp(move_str, "b8n") == 0){return 102;}
+if (strcmp(move_str, "b8b") == 0){return 103;}
+if (strcmp(move_str, "b8q") == 0){return 104;}
+if (strcmp(move_str, "c8r") == 0){return 105;}
+if (strcmp(move_str, "c8n") == 0){return 106;}
+if (strcmp(move_str, "c8b") == 0){return 107;}
+if (strcmp(move_str, "c8q") == 0){return 108;}
+if (strcmp(move_str, "d8r") == 0){return 109;}
+if (strcmp(move_str, "d8n") == 0){return 110;}
+if (strcmp(move_str, "d8b") == 0){return 111;}
+if (strcmp(move_str, "d8q") == 0){return 112;}
+if (strcmp(move_str, "e8r") == 0){return 113;}
+if (strcmp(move_str, "e8n") == 0){return 114;}
+if (strcmp(move_str, "e8b") == 0){return 115;}
+if (strcmp(move_str, "e8q") == 0){return 116;}
+if (strcmp(move_str, "f8r") == 0){return 117;}
+if (strcmp(move_str, "f8n") == 0){return 118;}
+if (strcmp(move_str, "f8b") == 0){return 119;}
+if (strcmp(move_str, "f8q") == 0){return 120;}
+if (strcmp(move_str, "g8r") == 0){return 121;}
+if (strcmp(move_str, "g8n") == 0){return 122;}
+if (strcmp(move_str, "g8b") == 0){return 123;}
+if (strcmp(move_str, "g8q") == 0){return 124;}
+if (strcmp(move_str, "h8r") == 0){return 125;}
+if (strcmp(move_str, "h8n") == 0){return 126;}
+if (strcmp(move_str, "h8b") == 0){return 127;}
+if (strcmp(move_str, "h8q") == 0){return 128;}
 }

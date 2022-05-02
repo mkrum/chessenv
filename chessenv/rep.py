@@ -13,6 +13,7 @@ from chessenv_c.lib import (
     array_to_possible,
     move_arr_to_int,
     int_to_move_arr,
+    legal_mask_to_move_arr_mask,
 )
 
 _ffi = FFI()
@@ -57,7 +58,7 @@ class CMove:
 class CMoves:
 
     data: np.array
-    
+
     @classmethod
     def from_int(cls, move_ints):
         return cls(np.concatenate([CMove.from_int(m).to_array() for m in move_ints]))
@@ -269,3 +270,27 @@ def _int_to_move_arr(move_int):
         _ffi.cast("int *", move_int.ctypes.data),
     )
     return move_arr
+
+
+def legal_mask_convert(legal_mask):
+    n = legal_mask.shape[0]
+    legal_mask = legal_mask.flatten()
+
+    move_arr = -np.ones(shape=(n * 256 * 2), dtype=np.int32)
+
+    legal_mask_to_move_arr_mask(
+        _ffi.cast("int*", move_arr.ctypes.data),
+        _ffi.cast("int *", legal_mask.ctypes.data),
+        n,
+    )
+
+    move_arr = move_arr.reshape(n, 256, 2)
+
+    move_map = {}
+
+    for i in range(n):
+        valid = move_arr[i, move_arr[i, :, 0] > -1]
+        valid = np.concatenate((np.zeros((valid.shape[0], 1)), valid), axis=1)
+        move_map[i] = valid
+
+    return move_map

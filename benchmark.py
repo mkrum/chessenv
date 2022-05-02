@@ -13,6 +13,7 @@ import multiprocessing as mp
 
 from chessenv.rep import CMove
 
+
 def random_action(masks):
     probs = masks / np.sum(masks, axis=1).reshape(-1, 1)
     actions = np.int32(np.zeros(len(masks)))
@@ -20,12 +21,12 @@ def random_action(masks):
         actions[i] = np.random.choice(len(p), p=p)
     return actions
 
-class PySpielChessEnvSequential:
 
+class PySpielChessEnvSequential:
     def __init__(self, n):
         self.n = n
         self._envs = [Environment(pyspiel.load_game("chess")) for _ in range(n)]
-        self.action_width = self._envs[0].action_spec()['num_actions']
+        self.action_width = self._envs[0].action_spec()["num_actions"]
 
     def reset(self):
         out = [e.reset() for e in self._envs]
@@ -46,7 +47,7 @@ class PySpielChessEnvSequential:
 
         for (i, a) in enumerate(action):
             a = np.array([a])
-            
+
             out = self._envs[i].step(a)
 
             if out.step_type == StepType.LAST:
@@ -55,7 +56,9 @@ class PySpielChessEnvSequential:
                 out = self._envs[i].reset()
             else:
                 current_player = self._envs[i]
-                response = random.sample(out.observations["legal_actions"][out.current_player()], 1)
+                response = random.sample(
+                    out.observations["legal_actions"][out.current_player()], 1
+                )
 
                 out = self._envs[i].step(np.array(response))
 
@@ -76,6 +79,7 @@ class PySpielChessEnvSequential:
             dones,
         )
 
+
 def _worker(state_q, action_q):
     env = PySpielChessEnvSequential(1)
     state_and_mask = env.reset()
@@ -85,9 +89,9 @@ def _worker(state_q, action_q):
         action = action_q.get()
         out = env.step(action)
         state_q.put(out)
-        
-class PySpielChessEnvParallel:
 
+
+class PySpielChessEnvParallel:
     def __init__(self, n):
         self.n = n
         self._reset()
@@ -116,11 +120,17 @@ class PySpielChessEnvParallel:
 
         out = [s.get() for s in self.state_qs]
         states, masks, rewards, dones = zip(*out)
-        return np.concatenate(states), np.concatenate(masks), np.concatenate(rewards), np.concatenate(dones)
+        return (
+            np.concatenate(states),
+            np.concatenate(masks),
+            np.concatenate(rewards),
+            np.concatenate(dones),
+        )
 
     def __del__(self):
         for p in self.procs:
             p.kill()
+
 
 def benchmark(env, n, n_steps=100):
     env = env(n)
@@ -137,7 +147,8 @@ def benchmark(env, n, n_steps=100):
 
     return times
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
         try:
