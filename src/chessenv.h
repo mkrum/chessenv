@@ -15,3 +15,4 @@ void step_random_move_env(Env *env, int* boards, int *dones);
 void generate_random_move(Env *env, int* boards);
 void reset_boards(Env *env, int *reset);
 void get_possible_moves(Env* env, int*);
+void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand);

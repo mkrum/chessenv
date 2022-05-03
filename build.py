@@ -54,6 +54,7 @@ void fen_to_possible(int *move_arr, char *fen);
 void move_arr_to_int(int *move_int, int*move_arr);
 void int_to_move_arr(int *move_int, int*move_arr);
 void legal_mask_to_move_arr_mask(int *move_arr_mask, int *legal_mask, int N);
+void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand);
 """
 )
 

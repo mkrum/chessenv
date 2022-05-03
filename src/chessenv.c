@@ -106,6 +106,35 @@ void reset_boards(Env *env, int *reset) {
     }
 }
 
+void random_step_board(Board *board, int n_moves) {
+
+    for (size_t i = 0; i < n_moves; i++) {
+        Move possible_moves[MAX_MOVES];
+
+        int total = gen_legal_moves(board, possible_moves);
+
+        if (total == 0) {
+            board_reset(board);
+            return random_step_board(board, n_moves);
+        }
+
+        int random_idx = rand() % total;
+        Move move = possible_moves[random_idx];
+        make_move(board, &move);
+    }
+
+}
+
+void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand) {
+    for (size_t i = 0; i < env->N; i += 1) {
+        if (reset[i] == 1) {
+            board_reset(&env->boards[i]);
+            int num = (rand() % (max_rand - min_rand + 1)) + min_rand;
+            random_step_board(&env->boards[i], num);
+        }
+    }
+}
+
 void generate_random_move(Env *env, int *moves) {
 
 #pragma omp parallel for

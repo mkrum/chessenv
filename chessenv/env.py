@@ -16,7 +16,7 @@ from chessenv_c.lib import (
     reset_env,
     generate_random_move,
     generate_stockfish_move,
-    reset_boards,
+    reset_and_randomize_boards,
     create_sfarray,
     clean_sfarray,
     get_possible_moves,
@@ -26,12 +26,14 @@ from chessenv.rep import CMoves, CBoards
 
 
 class CChessEnv:
-    def __init__(self, n, max_step=100, draw_reward=0):
+    def __init__(self, n, max_step=100, draw_reward=0, min_random=0, max_random=0):
         self.ffi = FFI()
         self.n = n
         self.max_step = max_step
         self.draw_reward = draw_reward
         self._env = chessenv_c.ffi.new("Env *")
+        self.min_random = min_random
+        self.max_random = max_random
 
         self.t = np.zeros(self.n)
 
@@ -84,12 +86,12 @@ class CChessEnv:
             self.ffi.cast("int *", reward.ctypes.data),
         )
 
-        reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
+        reset_and_randomize_boards(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
         return done, reward
 
     def reset_boards(self, done):
         done = np.int32(done)
-        reset_boards(self._env, self.ffi.cast("int *", done.ctypes.data))
+        reset_and_randomize_boards(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
         self.t[(done == 1)] = 0
 
     def step(self, move_arr):
