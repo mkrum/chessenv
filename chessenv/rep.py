@@ -21,6 +21,25 @@ _ffi = FFI()
 
 @dataclass(frozen=True)
 class CMove:
+    """
+    Wrapper for move datatypes.
+
+    Implements the conversions between raw numpy arrays, integers, strings.
+
+    Example
+    -------
+    >>> from chessenv.rep import CMove
+    >>> move = CMove.from_str("e2e4")
+    >>> move.to_int()
+    2925
+    >>> move.to_array()
+    array([4, 1, 4, 3, 0], dtype=int32)
+    >>> move.to_str()
+    'e2e4'
+    >>> move = CMove.from_int(2925)
+    >>> move.to_str()
+    'e2e4'
+    """
 
     data: np.array
 
@@ -53,10 +72,82 @@ class CMove:
     def to_int(self):
         return _move_arr_to_int(self.data)
 
+@dataclass(frozen=True)
+class CBoard:
+    """
+    Wrapper for board datatypes.
+
+    Implements the conversions between raw numpy arrays, FEN notation, and
+    python-chess objects.
+
+    Example
+    -------
+    >>> from chessenv.rep import CBoard
+    >>> import chess
+    >>> board = chess.Board()
+    >>> board
+    Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    >>> cboard = CBoard.from_fen(board.fen())
+    >>> cboard.to_array()
+    array([10,  8,  9, 11, 12,  9,  8, 10,  7,  7,  7,  7,  7,  7,  7,  7,  0,
+            0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+            0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,
+            1,  1,  1,  1,  1,  4,  2,  3,  5,  6,  3,  2,  4, 14, 22, 20, 18,
+            16], dtype=int32)
+    >>> cboard.to_fen()
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'
+    >>> cboard.to_board()
+    Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    """
+
+    data: np.array
+
+    @classmethod
+    def from_array(cls, arr):
+        return cls(arr)
+
+    def to_fen(self):
+        return _array_to_fen(self.data)
+
+    @classmethod
+    def from_fen(cls, fen_str):
+        fen_str = fen_str.replace("-", "")
+        return cls(_fen_to_array(fen_str))
+
+    def to_array(self):
+        return self.data
+
+    @classmethod
+    def from_board(cls, board):
+        return cls.from_fen(board.fen())
+
+    def to_board(self):
+        fen = self.to_fen()
+        return chess.Board(fen)
+    
+    def to_possible_moves(self):
+        # Replace this with a C openmp version
+        return CMoves.from_array(_array_to_possible(self.data))
+
+    def __str__(self):
+        board = self.to_board()
+        return str(board)
+
+    def __repr__(self):
+        board = self.to_board()
+        return repr(board)
+
+
 
 @dataclass(frozen=True)
 class CMoves:
+    """
+    Stack of CMove objects
 
+    Implements the conversions between raw numpy arrays, integers, strings for
+    a group of CMoves. Useful for interacting with the environment, which will
+    return all of the moves within a single array. See CMove.
+    """
     data: np.array
 
     @classmethod
@@ -109,9 +200,15 @@ class CMoves:
     def to_array(self):
         return self.data
 
-
 @dataclass(frozen=True)
 class CBoards:
+    """
+    Stack of CBoard objects
+
+    Implements the conversions between raw numpy arrays, integers, strings for
+    a group of CBoards. Useful for interacting with the environment, which will
+    return all of the boards within a single array. See CBoard.
+    """
 
     data: np.array
 
@@ -154,49 +251,14 @@ class CBoards:
         fens = self.to_fen()
         return [chess.Board(f) for f in fens]
 
-
-@dataclass(frozen=True)
-class CBoard:
-
-    data: np.array
-
-    def to_possible_moves(self):
-        # Replace this with a C openmp version
-        return CMoves.from_array(_array_to_possible(self.data))
-
-    def __str__(self):
-        board = self.to_board()
-        return str(board)
-
-    def __repr__(self):
-        board = self.to_board()
-        return repr(board)
-
-    @classmethod
-    def from_array(cls, arr):
-        return cls(arr)
-
-    def to_fen(self):
-        return _array_to_fen(self.data)
-
-    @classmethod
-    def from_fen(cls, fen_str):
-        fen_str = fen_str.replace("-", "")
-        return cls(_fen_to_array(fen_str))
-
-    def to_array(self):
-        return self.data
-
-    @classmethod
-    def from_board(cls, board):
-        return cls.from_fen(board.fen())
-
-    def to_board(self):
-        fen = self.to_fen()
-        return chess.Board(fen)
-
+"""
+Below is the wrapper code for interacting with the C library. These functions
+wrap the underlying C defintion with a function that only operates on numpy
+arrays for simplicity. See chessenv/
+"""
 
 def _fen_to_array(fen_str):
+    """ Converts a fen to a board array """
     board_arr = np.zeros(shape=(69), dtype=np.int32)
     x = _ffi.new(f"char[{len(fen_str) + 10}]", bytes(fen_str, encoding="utf-8"))
     fen_to_array(_ffi.cast("int *", board_arr.ctypes.data), _ffi.cast("char *", x))
@@ -205,6 +267,7 @@ def _fen_to_array(fen_str):
 
 
 def _array_to_fen(board_arr):
+    """ Converts a board array to fen """
     x = _ffi.new(f"char[512]", bytes("\0" * 512, encoding="utf-8"))
     array_to_fen(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
@@ -222,6 +285,7 @@ def _array_to_fen(board_arr):
 
 
 def _move_str_to_array(move_str):
+    """ Converts string representation of a move ("e2e4") to an array """
     move_arr = np.zeros(shape=(5), dtype=np.int32)
     x = _ffi.new(f"char[10]", bytes(move_str, encoding="utf-8"))
     move_str_to_array(_ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("char *", x))
@@ -230,6 +294,7 @@ def _move_str_to_array(move_str):
 
 
 def _array_to_move_str(move_arr):
+    """ Converts move array to a string representation of a move ("e2e4") """
     x = _ffi.new(f"char[10]", bytes("\0" * 10, encoding="utf-8"))
     array_to_move_str(x, _ffi.cast("int *", move_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
@@ -243,6 +308,7 @@ def _array_to_move_str(move_arr):
 
 
 def _array_to_possible(data):
+    """ Converts a board array to a move array of the possible moves """
     move_arr = np.zeros(shape=(256 * 5), dtype=np.int32)
     array_to_possible(
         _ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("int*", data.ctypes.data)
@@ -254,6 +320,7 @@ def _array_to_possible(data):
 
 
 def _move_arr_to_int(move_arr):
+    """ Converts a move array to a move id """
     move_int = np.zeros(shape=(1,), dtype=np.int32)
     move_arr_to_int(
         _ffi.cast("int *", move_int.ctypes.data),
@@ -263,6 +330,7 @@ def _move_arr_to_int(move_arr):
 
 
 def _int_to_move_arr(move_int):
+    """ Converts a move id to a move array """
     move_int = np.array([move_int])
     move_arr = np.zeros(shape=(5,), dtype=np.int32)
     int_to_move_arr(
@@ -273,6 +341,7 @@ def _int_to_move_arr(move_int):
 
 
 def legal_mask_convert(legal_mask):
+    """ Converts the id version of the move mask into an array based version """
     n = legal_mask.shape[0]
     legal_mask = legal_mask.flatten()
 
