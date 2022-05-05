@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y python3.8 python3-pip build-essential git cmake
+RUN apt-get update && apt-get install -y python3.8 python3-pip build-essential git cmake clang-9 clang-tools-9
 
 ENV LD_LIBRARY_PATH /usr/local/lib
 
@@ -22,9 +22,7 @@ ADD src /workdir/src
 ADD chessenv /workdir/chessenv
 
 RUN python3.8 -m pip install -e .
-RUN apt-get install 
 
-RUN apt-get install -y clang-9 clang-tools-9
 RUN export CMAKE_CXX_COMPILER=/usr/bin/clang++-9
 RUN python3.8 -m pip install open_spiel || python3.8 -m pip install open_spiel
 RUN python3.8 -m pip install chess
