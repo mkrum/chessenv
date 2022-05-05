@@ -254,7 +254,7 @@ class CBoards:
 """
 Below is the wrapper code for interacting with the C library. These functions
 wrap the underlying C defintion with a function that only operates on numpy
-arrays for simplicity. See chessenv/
+arrays for simplicity. See src/ and build.py
 """
 
 def _fen_to_array(fen_str):

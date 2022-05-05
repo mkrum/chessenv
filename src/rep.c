@@ -6,11 +6,12 @@
 #include "board.h"
 #include "gen.h"
 
-
+/* Converts a Board type into a board array */
 void board_to_array(int* boards, Board board) {
     int idx = 0;
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
+            // Get piece map
             char c;
             int piece = board.squares[RF(rank, file)];
     
@@ -61,6 +62,7 @@ void board_to_array(int* boards, Board board) {
     }
     ++idx;
 
+    // Get casling setup
     int castle = board.castle; 
     if (castle >= 8) {
         boards[idx] = 22;
@@ -95,6 +97,7 @@ void board_to_array(int* boards, Board board) {
     
 }
 
+/* Converts raw array type into a Board type */
 void array_to_board(Board *board, int* board_arr) {
 
     board_clear(board);
@@ -171,18 +174,21 @@ void array_to_board(Board *board, int* board_arr) {
     board->pawn_hash ^= HASH_CASTLE[board->castle];
 }
 
+/* Converts fen string into an array */
 void fen_to_array(int* boards, char *fen) {
     Board board;
     board_load_fen(&board, fen);
     board_to_array(boards, board);
 }
 
+/* Converts array into fen string */
 void array_to_fen(char *fen, int *boards) {
     Board board;
     array_to_board(&board, boards);
     board_to_fen(fen, board);
 }
 
+/* Converts Board type into fen string */
 void board_to_fen(char *fen, Board board) {
 
     int idx = 0;
@@ -286,6 +292,7 @@ void board_to_fen(char *fen, Board board) {
     fen[idx] = '\0';
 }
 
+/* Converts array intro move string */
 void array_to_move_str(char* move_str, int* move_arr) {
     char rows[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
     char cols[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
@@ -298,12 +305,14 @@ void array_to_move_str(char* move_str, int* move_arr) {
     move_str[4] = promos[move_arr[4]];
 }
 
+/* Converts move array into Move */
 void array_to_move(Move *move, int* move_arr) {
     char move_str[5];
     array_to_move_str(move_str, move_arr);
     move_from_string(move, move_str);
 }
 
+/* Converts move string into array */
 void move_str_to_array(int* move_arr, char *move_str) {
 
     int from_row = move_str[0] - 'a';
@@ -326,18 +335,21 @@ void move_str_to_array(int* move_arr, char *move_str) {
     move_arr[4] = promotion;
 }
 
+/* Converts Move into an array */
 void move_to_array(int* move_arr, Move move) {
     char move_str[10];
     move_to_string(&move, move_str);
     move_str_to_array(move_arr, move_str);
 }
 
+/* Converts a move array into an array of possible moves */
 void array_to_possible(int *move_arr, int *board_arr) {
     char fen[512];
     array_to_fen(fen, board_arr);
     fen_to_possible(move_arr, fen);
 }
 
+/* Converts a fen string into an array of possible moves */
 void fen_to_possible(int *move_arr, char *fen) {
     bb_init();
     Board board;

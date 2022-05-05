@@ -14,7 +14,7 @@
 #include "move.h" 
 #include "gen.h"
 
-
+/** Resets the boards in the environment */
 void reset_env(Env* env, int n) {
 
     bb_init();
@@ -27,13 +27,18 @@ void reset_env(Env* env, int n) {
     env->N = n;
 }
 
+/** Computes the mask of legal moves for each board. Mask is based on move id
+ * */
 void get_mask(Env* env, int *move_mask) {
+
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++){
 
+        // Get legal moves
         Move possible_moves[MAX_MOVES];
         int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
-
+        
+        // Write them to array
         for (int j = 0; j < total_legal; j++) {
             int move_arr[5];
             move_to_array(move_arr, possible_moves[j]);
@@ -52,7 +57,7 @@ void print_board(Env *env) {
     }
 }
 
-
+/** Returns a board array for the current environment state */
 void get_boards(Env *env, int* boards) {
     int idx = 0;
     for (size_t i = 0; i < env->N; i++){
@@ -62,15 +67,19 @@ void get_boards(Env *env, int* boards) {
     }
 }
 
+
+/** Steps the environment forward one step in time */
 void step_env(Env *env, int *moves, int *dones, int *reward) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
-
+        
+        // Convert move id to actual move, apply to board
         Move move;
         int_to_move(&move, moves[i]);
         make_move(&env->boards[i], &move);
 
+        // See if there is a possible response, if not, you win.
         Move possible_moves[MAX_MOVES];
         int total = gen_legal_moves(&env->boards[i], possible_moves);
 
@@ -80,16 +89,18 @@ void step_env(Env *env, int *moves, int *dones, int *reward) {
 }
 
 
+/** Computes the total possible moves from the current environment state */
 void get_possible_moves(Env* env, int* total_moves) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
-
+        
+        // Get possible moves
         Move possible_moves[MAX_MOVES];
         int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
 
+        // Write to array
         int idx = MAX_MOVES * 5 * i;
-
         for (int i = 0; i < total_legal; i++) {
             char move_str[10];
             move_to_array(&total_moves[idx], possible_moves[i]);
@@ -99,6 +110,7 @@ void get_possible_moves(Env* env, int* total_moves) {
 }
 
 void reset_boards(Env *env, int *reset) {
+#pragma omp parallel for
     for (size_t i = 0; i < env->N; i += 1) {
         if (reset[i] == 1) {
             board_reset(&env->boards[i]);
@@ -106,6 +118,7 @@ void reset_boards(Env *env, int *reset) {
     }
 }
 
+/** Applies a random step to the board */
 void random_step_board(Board *board, int n_moves) {
 
     Move possible_moves[MAX_MOVES];
@@ -132,7 +145,9 @@ void random_step_board(Board *board, int n_moves) {
 
 }
 
+/** Resets any done boards, applies a random number of moves in [min_rand, max_rand] */
 void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand) {
+#pragma omp parallel for
     for (size_t i = 0; i < env->N; i += 1) {
         if (reset[i] == 1) {
             board_reset(&env->boards[i]);
@@ -142,6 +157,7 @@ void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand
     }
 }
 
+/** Samples a random move for the current environment state  */
 void generate_random_move(Env *env, int *moves) {
 
 #pragma omp parallel for
