@@ -108,8 +108,8 @@ void reset_boards(Env *env, int *reset) {
 
 void random_step_board(Board *board, int n_moves) {
 
+    Move possible_moves[MAX_MOVES];
     for (size_t i = 0; i < n_moves; i++) {
-        Move possible_moves[MAX_MOVES];
 
         int total = gen_legal_moves(board, possible_moves);
 
@@ -121,6 +121,13 @@ void random_step_board(Board *board, int n_moves) {
         int random_idx = rand() % total;
         Move move = possible_moves[random_idx];
         make_move(board, &move);
+    }
+
+    int total = gen_legal_moves(board, possible_moves);
+
+    if (total == 0) {
+        board_reset(board);
+        return random_step_board(board, n_moves);
     }
 
 }
