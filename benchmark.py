@@ -150,7 +150,7 @@ def benchmark(env, n, n_steps=100):
 
 if __name__ == "__main__":
 
-    for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]:
+    for n in [1, 2, 4, 8, 16, 32, 128, 256, 512, 1024]:
         try:
             times = benchmark(PySpielChessEnvParallel, n)
             times = list(map(str, times))
