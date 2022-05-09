@@ -188,11 +188,6 @@ class CChessEnv:
     def sample_opponent(self):
         return self.random()
 
-    def reset_boards(self, done):
-        done = np.int32(done)
-        reset_and_randomize_boards(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
-        self.t[(done == 1)] = 0
-
     def step_moves(self, moves):
         move_arr = CMoves.from_str(moves).to_int()
         return self.step_arr(move_arr)
