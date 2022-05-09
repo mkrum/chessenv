@@ -27,6 +27,19 @@ void reset_env(Env* env, int n) {
     env->N = n;
 }
 
+void invert_env(Env* env, int n) {
+
+    bb_init();
+    srand(time(0));
+
+#pragma omp parallel for
+    for (int i = 0; i < n; i++){
+        invert_board(&env->boards[i]);
+        
+    }
+    env->N = n;
+}
+
 void get_mask(Env* env, int *move_mask) {
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++){
@@ -133,6 +146,7 @@ void random_step_board(Board *board, int n_moves) {
 }
 
 void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand) {
+#pragma omp parallel for
     for (size_t i = 0; i < env->N; i += 1) {
         if (reset[i] == 1) {
             board_reset(&env->boards[i]);
@@ -141,6 +155,27 @@ void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand
         }
     }
 }
+
+void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand) {
+#pragma omp parallel for
+    for (size_t i = 0; i < env->N; i += 1) {
+        if (reset[i] == 1) {
+            board_reset(&env->boards[i]);
+            int num = (rand() % (max_rand - min_rand + 1)) + min_rand;
+            random_step_board_invert(&env->boards[i], num);
+        }
+    }
+}
+
+void random_step_board_invert(Board *board, int n_moves) {
+
+    random_step_board(board, n_moves);
+
+    if (n_moves % 2 == 1) {
+        invert_board(board);
+    }
+}
+
 
 void generate_random_move(Env *env, int *moves) {
 

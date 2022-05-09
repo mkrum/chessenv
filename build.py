@@ -55,6 +55,15 @@ void move_arr_to_int(int *move_int, int*move_arr);
 void int_to_move_arr(int *move_int, int*move_arr);
 void legal_mask_to_move_arr_mask(int *move_arr_mask, int *legal_mask, int N);
 void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand);
+
+void board_to_inverted_fen(char *fen, Board board);
+void array_to_inverted_fen(char* fen, int* boards);
+
+void invert_board(Board *boards);
+void invert_array(int *boards);
+  
+void invert_env(Env* env, int n);
+void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand);
 """
 )
 

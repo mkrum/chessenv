@@ -10,6 +10,7 @@ from typing import List
 
 from chessenv_c.lib import (
     reset_env,
+    invert_env, 
     get_mask,
     get_boards,
     step_env,
@@ -17,6 +18,7 @@ from chessenv_c.lib import (
     generate_random_move,
     generate_stockfish_move,
     reset_and_randomize_boards,
+    reset_and_randomize_boards_invert,
     create_sfarray,
     clean_sfarray,
     get_possible_moves,
@@ -26,7 +28,7 @@ from chessenv.rep import CMoves, CBoards
 
 
 class CChessEnv:
-    def __init__(self, n, max_step=100, draw_reward=0, min_random=0, max_random=0):
+    def __init__(self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False):
         self.ffi = FFI()
         self.n = n
         self.max_step = max_step
@@ -34,6 +36,7 @@ class CChessEnv:
         self._env = chessenv_c.ffi.new("Env *")
         self.min_random = min_random
         self.max_random = max_random
+        self.invert = invert
 
         self.t = np.zeros(self.n)
 
@@ -73,6 +76,12 @@ class CChessEnv:
     def sample_opponent(self):
         return self.random()
 
+    def invert_boards(self):
+        invert_env(
+            self._env,
+            self.n
+        )
+
     def push_moves(self, move_arr):
         done = self._make_vec_arr()
         reward = self._make_vec_arr()
@@ -86,12 +95,18 @@ class CChessEnv:
             self.ffi.cast("int *", reward.ctypes.data),
         )
 
-        reset_and_randomize_boards(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+        if self.invert:
+            self.invert_boards()
+        
+        if self.invert:
+            reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+        else:
+            reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
         return done, reward
 
     def reset_boards(self, done):
         done = np.int32(done)
-        reset_and_randomize_boards(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+        reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
         self.t[(done == 1)] = 0
 
     def step(self, move_arr):
@@ -104,7 +119,6 @@ class CChessEnv:
         reward[(self.t > self.max_step)] = self.draw_reward
 
         total_done = ((done_one + done_two) > 0) | (self.t > self.max_step)
-        self.t[(total_done == 1)] = 0
 
         self.reset_boards(total_done)
 
@@ -131,16 +145,17 @@ class CChessEnv:
 
 
 class SFCChessEnv(CChessEnv):
-    def __init__(self, n, depth):
-        super().__init__(n)
+    def __init__(self, n, depth=1, max_step=100, draw_reward=0, min_random=0, max_random=0):
+        super().__init__(n, max_step=max_step, draw_reward=draw_reward, min_random=min_random, max_random=max_random)
         self._sfa = chessenv_c.ffi.new("SFArray *")
         create_sfarray(self._sfa, depth, n)
 
     def sample_opponent(self):
+        move_arr = self._make_move_arr()
         generate_stockfish_move(
-            self._env, self._sfa, self.ffi.cast("int *", self.move_arr.ctypes.data)
+            self._env, self._sfa, self.ffi.cast("int *", move_arr.ctypes.data)
         )
-        return np.copy(self.move_arr)
+        return move_arr
 
     def __del__(self):
         clean_sfarray(self._sfa)

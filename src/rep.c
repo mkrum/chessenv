@@ -6,6 +6,19 @@
 #include "board.h"
 #include "gen.h"
 
+void invert_board(Board *board) {
+    char fen[512];
+    board_to_inverted_fen(fen, *board);
+    board_load_fen(board, fen);
+}
+
+void invert_array(int *board_arr) {
+    Board board;
+    board_reset(&board);
+    array_to_board(&board, board_arr);
+    invert_board(&board);
+    board_to_array(board_arr, board);
+}
 
 void board_to_array(int* boards, Board board) {
     int idx = 0;
@@ -183,6 +196,12 @@ void array_to_fen(char *fen, int *boards) {
     board_to_fen(fen, board);
 }
 
+void array_to_inverted_fen(char *fen, int *boards) {
+    Board board;
+    array_to_board(&board, boards);
+    board_to_inverted_fen(fen, board);
+}
+
 void board_to_fen(char *fen, Board board) {
 
     int idx = 0;
@@ -352,4 +371,110 @@ void fen_to_possible(int *move_arr, char *fen) {
         move_to_array(&move_arr[idx], possible_moves[i]);
         idx += 5;
     }
+}
+
+
+void board_to_inverted_fen(char *fen, Board board) {
+
+    int idx = 0;
+    int blank_count = 0;
+
+    /// Start at bottom and work backwards
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+
+            int piece_int = board.squares[RF(rank, file)];
+            int piece = PIECE(piece_int);
+
+            if (piece == EMPTY) {
+                blank_count++;
+            } else {
+                if (blank_count > 0) {
+                    fen[idx] = blank_count + '0'; 
+                    idx++;
+                    blank_count = 0;
+                }
+                switch (PIECE(piece_int)) {
+                    case PAWN:   fen[idx] = 'P'; break;
+                    case KNIGHT: fen[idx] = 'N'; break;
+                    case BISHOP: fen[idx] = 'B'; break;
+                    case ROOK:   fen[idx] = 'R'; break;
+                    case QUEEN:  fen[idx] = 'Q'; break;
+                    case KING:   fen[idx] = 'K'; break;
+                };
+
+                // Invert the inversion 
+                if (!COLOR(piece_int)) {
+                    fen[idx] |= 0x20;
+                }
+
+                idx++;
+            }
+        }
+
+        if (blank_count > 0) {
+            fen[idx] = blank_count + '0'; 
+            idx++;
+            blank_count = 0;
+        }
+
+        fen[idx] = '/';
+        idx++;
+    }
+    idx--;
+    fen[idx] = ' ';
+    idx++;
+        
+    // Flip these
+    if (board.color == WHITE) {
+        fen[idx] = 'b';
+    } else {
+        fen[idx] = 'w';
+    }
+    ++idx;
+
+    fen[idx] = ' ';
+    ++idx;
+
+    int castle = board.castle; 
+    if (castle >= 8) {
+        fen[idx] = 'Q';
+        idx++;
+        castle -= 8;
+    }
+    if (castle >= 4) {
+        fen[idx] = 'K';
+        idx++;
+        castle -= 4;
+    }
+    if (castle >= 2) {
+        fen[idx] = 'q';
+        idx++;
+        castle -= 2;
+    }
+    if (castle >= 1) {
+        fen[idx] = 'k';
+        idx++;
+    }
+
+    fen[idx] = ' ';
+    ++idx;
+
+    if (board.ep == 0) {
+        fen[idx] = '-';
+        idx++;
+    } else {
+        for (int rank = 0; rank < 8; rank++) {
+            for (int file = 0; file < 8; file++) {
+                if (board.ep == (long long int)BIT(RF(rank, file))) {
+                    fen[idx] = 'a' + file;
+                    idx++;
+                    fen[idx] = '8' - rank;
+                    idx++;
+                    break;
+                }
+            }
+        }
+    }
+    fen[idx] = '\0';
 }

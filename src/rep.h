@@ -13,3 +13,9 @@ void array_to_move_str(char* move_str, int* move_arr);
 
 void fen_to_possible(int * move_arr, char *fen);
 void array_to_possible(int * move_arr, int *board_arr);
+
+void board_to_inverted_fen(char *fen, Board board);
+void array_to_inverted_fen(char* fen, int* boards);
+
+void invert_board(Board *boards);
+void invert_array(int *boards);

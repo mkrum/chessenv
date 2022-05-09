@@ -5,8 +5,11 @@
 #include <signal.h>
 #include <math.h>
 #include <time.h>
+
 #include "chessenv.h"
 #include "sfarray.h"
+#include "move_map.h"
+#include "rep.h"
 
 #include "board.h"
 #include "move.h" 
@@ -103,7 +106,6 @@ void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
-
         char fen[512];
         char move_str[10];
         
@@ -112,22 +114,9 @@ void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
 
         get_sf_move(&sfa->sfpipe[i], fen, sfa->depth, move_str);
 
-        int from_row = move_str[0] - 'a';
-        int from_col = move_str[1] - '1';
-        int to_row = move_str[2] - 'a';
-        int to_col = move_str[3] - '1';
-        
-        int promotion = 0;
-        switch (move_str[4]) {
-            case 'n': promotion = 1; break;
-            case 'b': promotion = 2; break;
-            case 'r': promotion = 3; break;
-            case 'q': promotion = 4; break;
-        }
-        moves[5 * i] = from_row;
-        moves[5 * i + 1] = from_col;
-        moves[5 * i + 2] = to_row;
-        moves[5 * i + 3] = to_col;
-        moves[5 * i + 4] = promotion;
+        int move_arr[5];
+        move_str_to_array(move_arr, move_str);
+
+        move_arr_to_int(&moves[i], move_arr);
     }
 }

@@ -16,3 +16,5 @@ void generate_random_move(Env *env, int* boards);
 void reset_boards(Env *env, int *reset);
 void get_possible_moves(Env* env, int*);
 void reset_and_randomize_boards(Env *env, int *reset, int min_rand, int max_rand);
+void invert_env(Env* env, int n);
+void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand);
