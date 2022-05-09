@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
 #include "chessenv.h"
 #include "sfarray.h"
@@ -33,20 +34,19 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
 
         if (!fgets(buf, 1024, sfpipe->in)) {
             // Try again?
-            //clean_sfpipe(sfpipe);
-            //create_sfpipe(sfpipe);
+            clean_sfpipe(sfpipe);
+            create_sfpipe(sfpipe);
 
             sprintf(cmd, "position fen %s\n", fen);
-            printf("%s\n", cmd);
-            exit(1);
-            //fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
-            //fflush(sfpipe->out);
+            printf("%s", cmd);
 
-            //sprintf(cmd, "go depth %i\n", depth);
-            //printf("%s\n", cmd);
-            //fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
-            //fflush(sfpipe->out);
-
+            move[0] = 'e';
+            move[1] = '2';
+            move[2] = 'e';
+            move[3] = '4';
+            move[4] = ' ';
+            move[5] = '\0';
+            break;
         } else {
 
             strncpy(start, buf, 4);
@@ -70,7 +70,7 @@ void create_sfpipe(SFPipe *sfpipe) {
         dup2(in_pipe_f[1], STDOUT_FILENO);
         dup2(in_pipe_f[1], STDERR_FILENO);
         
-        execl("/nfs/Stockfish/src/stockfish", "stockfish", (char*) NULL);
+        execl("/home/michael/stockfish/src/stockfish", "stockfish", (char*) NULL);
         exit(1);
     }
 
@@ -84,14 +84,18 @@ void create_sfpipe(SFPipe *sfpipe) {
 
 void clean_sfpipe(SFPipe *pipe) {
     kill(pipe->pid, SIGKILL);
+    waitpid(pipe->pid, NULL, 0);
     fclose(pipe->in);
     fclose(pipe->out);
 }
 
-void create_sfarray(SFArray* sfa, int depth, size_t N) {
-    sfa->N = N;
+void create_sfarray(SFArray* sfa, int depth) {
+
+    omp_set_num_threads(4);
+    sfa->N = 4;
     sfa->depth = depth;
-    for (size_t i = 0; i < N; i++) {
+
+    for (size_t i = 0; i < sfa->N; i++) {
         create_sfpipe(&sfa->sfpipe[i]);
     }
 }
@@ -99,6 +103,25 @@ void create_sfarray(SFArray* sfa, int depth, size_t N) {
 void clean_sfarray(SFArray* arr) {
     for (size_t i = 0; i < arr->N; i++) {
         clean_sfpipe(&arr->sfpipe[i]);
+    }
+}
+
+void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
+
+#pragma omp parallel for
+    for (size_t i = 0; i < N; i++) {
+        int thread_id = omp_get_thread_num();
+
+        char fen[512];
+        array_to_fen_noep(fen, &boards[i * 69]);
+        int len = strlen(fen);
+
+        char move_str[10];
+        get_sf_move(&sfa->sfpipe[thread_id], fen, sfa->depth, move_str);
+
+        int move_arr[5];
+        move_str_to_array(move_arr, move_str);
+        move_arr_to_move_rep(&moves[2 * i], move_arr);
     }
 }
 

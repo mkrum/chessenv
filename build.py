@@ -39,7 +39,7 @@ void reset_boards(Env *env, int *reset);
 void get_possible_moves(Env* env, int*);
 
 void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
-void create_sfarray(SFArray *sfa, int depth, size_t N);
+void create_sfarray(SFArray *sfa, int depth);
 void clean_sfarray(SFArray* arr);
 
 void fen_to_array(int* boards, char *fen);
@@ -64,6 +64,7 @@ void invert_array(int *boards);
   
 void invert_env(Env* env, int n);
 void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand);
+void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N);
 """
 )
 

@@ -16,7 +16,7 @@ def _invert_array(board_arr):
 
 
 def test_invert():
-    fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+    fen = "Q1b1kbn1/2Pp1p2/2n1p3/p6p/7p/2q4P/1rP1PPP1/RNBK1BNR w KQkq a6"
     board = CBoard.from_fen(fen)
     print(fen)
     print(CBoard.from_array(_invert_array(board.to_array())).to_fen())

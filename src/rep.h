@@ -2,7 +2,9 @@
 
 void fen_to_array(int* boards, char *fen);
 void array_to_fen(char* fen, int* boards);
+void array_to_fen_noep(char* fen, int* boards);
 void board_to_fen(char *fen, Board board);
+void board_to_fen_noep(char *fen, Board board);
 void board_to_array(int* boards, Board board);
 void array_to_board(Board *board, int* boards);
 

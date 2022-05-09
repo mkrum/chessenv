@@ -202,6 +202,12 @@ void array_to_fen(char *fen, int *boards) {
     board_to_fen(fen, board);
 }
 
+void array_to_fen_noep(char *fen, int *boards) {
+    Board board;
+    array_to_board(&board, boards);
+    board_to_fen_noep(fen, board);
+}
+
 void array_to_inverted_fen(char *fen, int *boards) {
     Board board;
     array_to_board(&board, boards);
@@ -489,5 +495,94 @@ void board_to_inverted_fen(char *fen, Board board) {
             }
         }
     }
+    fen[idx] = '\0';
+}
+
+void board_to_fen_noep(char *fen, Board board) {
+
+    int idx = 0;
+
+    int blank_count = 0;
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+
+            int piece_int = board.squares[RF(rank, file)];
+            int piece = PIECE(piece_int);
+
+            if (piece == EMPTY) {
+                blank_count++;
+            } else {
+                if (blank_count > 0) {
+                    fen[idx] = blank_count + '0'; 
+                    idx++;
+                    blank_count = 0;
+                }
+                switch (PIECE(piece_int)) {
+                    case PAWN:   fen[idx] = 'P'; break;
+                    case KNIGHT: fen[idx] = 'N'; break;
+                    case BISHOP: fen[idx] = 'B'; break;
+                    case ROOK:   fen[idx] = 'R'; break;
+                    case QUEEN:  fen[idx] = 'Q'; break;
+                    case KING:   fen[idx] = 'K'; break;
+                };
+
+                if (COLOR(piece_int)) {
+                    fen[idx] |= 0x20;
+                }
+
+                idx++;
+
+            }
+        }
+
+        if (blank_count > 0) {
+            fen[idx] = blank_count + '0'; 
+            idx++;
+            blank_count = 0;
+        }
+
+        fen[idx] = '/';
+        idx++;
+    }
+    idx--;
+    fen[idx] = ' ';
+    idx++;
+
+    if (board.color == WHITE) {
+        fen[idx] = 'w';
+    } else {
+        fen[idx] = 'b';
+    }
+    ++idx;
+
+    fen[idx] = ' ';
+    ++idx;
+
+    int castle = board.castle; 
+    if (castle >= 8) {
+        fen[idx] = 'q';
+        idx++;
+        castle -= 8;
+    }
+    if (castle >= 4) {
+        fen[idx] = 'k';
+        idx++;
+        castle -= 4;
+    }
+    if (castle >= 2) {
+        fen[idx] = 'Q';
+        idx++;
+        castle -= 2;
+    }
+    if (castle >= 1) {
+        fen[idx] = 'K';
+        idx++;
+    }
+
+    fen[idx] = ' ';
+    ++idx;
+
+    fen[idx] = '-';
+    idx++;
     fen[idx] = '\0';
 }

@@ -14,5 +14,6 @@ struct SFArray {
 typedef struct SFArray SFArray;
 
 void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
-void create_sfarray(SFArray *sfa, int depth, size_t N);
+void create_sfarray(SFArray *sfa, int depth);
 void clean_sfarray(SFArray *sfa);
+void board_arr_to_moves(int *moves, SFArray *sfa, int *boards, size_t N);
