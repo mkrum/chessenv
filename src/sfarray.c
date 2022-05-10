@@ -125,6 +125,25 @@ void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
     }
 }
 
+void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
+
+#pragma omp parallel for
+    for (size_t i = 0; i < N; i++) {
+        int thread_id = omp_get_thread_num();
+
+        char fen[512];
+        array_to_fen_noep(fen, &boards[i * 69]);
+        int len = strlen(fen);
+
+        char move_str[10];
+        get_sf_move(&sfa->sfpipe[thread_id], fen, sfa->depth, move_str);
+
+        int move_arr[5];
+        move_str_to_array(move_arr, move_str);
+        move_arr_to_int(&moves[i], move_arr);
+    }
+}
+
 void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
 
 #pragma omp parallel for

@@ -65,6 +65,7 @@ void invert_array(int *boards);
 void invert_env(Env* env, int n);
 void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand);
 void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N);
+void board_arr_to_move_int(int *moves, SFArray *sfa, int *boards, size_t N);
 """
 )
 

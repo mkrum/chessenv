@@ -6,6 +6,7 @@ from chessenv_c.lib import (
     create_sfarray,
     clean_sfarray,
     board_arr_to_moves,
+    board_arr_to_move_ints,
 )
 import chessenv_c
 import numpy as np
@@ -28,6 +29,13 @@ class SFArray:
         board_arr_to_moves(_ffi.cast("int *", move.ctypes.data), self._sfa, _ffi.cast("int *", board_arr.ctypes.data), N)
         move = move.reshape(N, 2)
         move = np.concatenate((np.zeros((move.shape[0], 1)), move), axis=1)
+        return move
+
+    def get_move_ints(self, board_arr):
+        N = board_arr.shape[0]
+        board_arr = np.int32(board_arr.flatten())
+        move = np.zeros(N, dtype=np.int32)
+        board_arr_to_move_ints(_ffi.cast("int *", move.ctypes.data), self._sfa, _ffi.cast("int *", board_arr.ctypes.data), N)
         return move
     
     def __del__(self):

@@ -17,3 +17,4 @@ void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
 void create_sfarray(SFArray *sfa, int depth);
 void clean_sfarray(SFArray *sfa);
 void board_arr_to_moves(int *moves, SFArray *sfa, int *boards, size_t N);
+void board_arr_to_move_int(int *moves, SFArray *sfa, int *boards, size_t N);
