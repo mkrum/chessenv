@@ -12,6 +12,7 @@ from chessenv_c.lib import (
     array_to_move_str,
     array_to_possible,
     move_arr_to_int,
+    board_arr_to_mask,
     int_to_move_arr,
     legal_mask_to_move_arr_mask,
 )
@@ -137,6 +138,8 @@ class CBoard:
         board = self.to_board()
         return repr(board)
 
+    def get_mask(self):
+        return _board_arr_to_mask(self.data)
 
 
 @dataclass(frozen=True)
@@ -363,3 +366,13 @@ def legal_mask_convert(legal_mask):
         move_map[i] = valid
 
     return move_map
+
+def _board_arr_to_mask(board_arr):
+    """ Converts a move array to a move id """
+    board_arr = np.int32(board_arr)
+    move_mask = np.zeros(shape=(64 * 88), dtype=np.int32)
+    board_arr_to_mask(
+        _ffi.cast("int *", board_arr.ctypes.data),
+        _ffi.cast("int *", move_mask.ctypes.data),
+    )
+    return move_mask

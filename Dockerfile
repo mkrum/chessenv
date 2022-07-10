@@ -1,6 +1,7 @@
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y python3.8 python3-pip build-essential git cmake clang-9 clang-tools-9
+RUN apt update \
+        && apt install -y python3.8 python3-pip build-essential git cmake clang-9 clang-tools-9
 
 ENV LD_LIBRARY_PATH /usr/local/lib
 

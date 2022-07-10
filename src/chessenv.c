@@ -46,21 +46,30 @@ void get_mask(Env* env, int *move_mask) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++){
-
-        // Get legal moves
-        Move possible_moves[MAX_MOVES];
-        int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
-        
-        // Write them to array
-        for (int j = 0; j < total_legal; j++) {
-            int move_arr[5];
-            move_to_array(move_arr, possible_moves[j]);
-
-            int move_int;
-            move_arr_to_int(&move_int, move_arr);
-            move_mask[i * 64 * OFF_TOTAL + move_int] = 1;
-        }
+        board_to_mask(&env->boards[i], move_mask + i * 64 * OFF_TOTAL);
     }
+}
+
+void board_to_mask(Board *board, int *move_mask) {
+    Move possible_moves[MAX_MOVES];
+    int total_legal = gen_legal_moves(board, possible_moves);
+    
+    // Write them to array
+    for (int j = 0; j < total_legal; j++) {
+        int move_arr[5];
+        move_to_array(move_arr, possible_moves[j]);
+    
+        int move_int;
+        move_arr_to_int(&move_int, move_arr);
+        move_mask[move_int] = 1;
+    }
+
+}
+
+void board_arr_to_mask(int* board_arr, int *move_mask) {
+    Board board;
+    array_to_board(&board, board_arr);
+    board_to_mask(&board, move_mask);
 }
 
 
