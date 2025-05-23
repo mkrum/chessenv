@@ -179,6 +179,19 @@ class CChessEnv:
         mask_arr = self._make_mask_arr()
         get_mask(self._env, self.ffi.cast("int *", mask_arr.ctypes.data))
         return mask_arr.reshape(self.n, 88 * 64)
+    
+    def get_possible_moves(self):
+        """
+        Get all possible moves for each board in the environment.
+        
+        Returns
+        -------
+        list:
+            List of CMoves objects, one for each board
+        """
+        mask = self.get_mask()
+        moves = [CMoves.from_int(np.argwhere(mask[i] == 1)) for i in range(self.n)]
+        return moves
 
     def random(self):
         move_arr = self._make_move_arr()

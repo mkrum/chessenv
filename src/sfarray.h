@@ -1,3 +1,7 @@
+#ifndef SFARRAY_H
+#define SFARRAY_H
+
+#include "chessenv.h"
 
 struct SFPipe {
     int pid;
@@ -13,8 +17,14 @@ struct SFArray {
 };
 typedef struct SFArray SFArray;
 
-void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
-void create_sfarray(SFArray *sfa, int depth);
-void clean_sfarray(SFArray *sfa);
-void board_arr_to_moves(int *moves, SFArray *sfa, int *boards, size_t N);
-void board_arr_to_move_int(int *moves, SFArray *sfa, int *boards, size_t N);
+/* Function declarations */
+void create_sfpipe(SFPipe *sfpipe);
+void clean_sfpipe(SFPipe *pipe);
+void create_sfarray(SFArray* sfa, int depth);
+void clean_sfarray(SFArray* arr);
+void get_sf_move(SFPipe *sfpipe, char *fen, int depth, char *move);
+void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N);
+void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N);
+void generate_stockfish_move(Env *env, SFArray *sfa, int* moves);
+
+#endif /* SFARRAY_H */

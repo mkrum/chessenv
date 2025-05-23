@@ -1,8 +1,15 @@
-
-#include "math.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "rep.h"
 #include "move_map.h"
-#include <string.h>
+
+/* Forward declarations */
+int offset_to_id(int offset_x, int offset_y, int promo);
+void id_to_offset(int unique_id, int* offset_x, int *offset_y, int *promo);
+int index_to_offset_id(int index);
+int offset_id_to_index(int offset_id);
+int move_str_to_rep_int(char *move_str);
 
 /* Converts the standard vector legal mask int a move array specific mask, used
  * for transformers.
@@ -10,13 +17,13 @@
 void legal_mask_to_move_arr_mask(int *move_arr_mask, int *legal_mask, int N) {
 
 #pragma omp parallel for
-    for (size_t i = 0; i < N; i++) {
+    for (size_t i = 0; i < (size_t)N; i++) {
         int idx = 0;
         for (size_t j = 0; j < (64 * OFF_TOTAL); j++) {
             if (legal_mask[i * 64 * OFF_TOTAL + j] == 1) {
                 
                 int move_arr[5];
-                int_to_move_arr(move_arr, &j);
+                int_to_move_arr(move_arr, (int*)&j);
 
                 int move_rep[2] = {5, 9};
                 move_arr_to_move_rep(move_rep, move_arr);
@@ -311,6 +318,7 @@ int offset_id_to_index(int offset_id) {
     }
     return out;
 }
+
 /** Machine Generated code, used to map from the string value for the partial move into an integer */
 int move_str_to_rep_int(char *move_str) {
     if (strcmp(move_str, "a1") == 0){return 1;}
@@ -441,4 +449,7 @@ int move_str_to_rep_int(char *move_str) {
     if (strcmp(move_str, "h8n") == 0){return 126;}
     if (strcmp(move_str, "h8b") == 0){return 127;}
     if (strcmp(move_str, "h8q") == 0){return 128;}
+    
+    // Default return in case no match is found
+    return 0;
 }

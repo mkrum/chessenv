@@ -5,7 +5,16 @@
 #include <signal.h>
 #include <math.h>
 #include <time.h>
+#include <sys/wait.h> /* For waitpid */
+
+/* Handle OpenMP conditionally */
+#ifdef _OPENMP
 #include <omp.h>
+#else
+/* Define OpenMP functions as no-ops for platforms without OpenMP */
+static inline int omp_get_thread_num() { return 0; }
+static inline void omp_set_num_threads(int num) { (void)num; }
+#endif
 
 #include "chessenv.h"
 #include "sfarray.h"
@@ -19,7 +28,7 @@
 void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     char cmd[256];
     char buf[1024];
-    char start[5] = { 0 };
+    char start[6] = { 0 }; // Increased to 6 for null terminator
 
     sprintf(cmd, "position fen %s\n", fen);
     fwrite(cmd, sizeof(char), strlen(cmd), sfpipe->out);
@@ -48,11 +57,10 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
             move[5] = '\0';
             break;
         } else {
-
             strncpy(start, buf, 4);
-            start[5] = '\0';
+            start[4] = '\0'; // Make sure it's null-terminated
             strncpy(move, buf+9, 5);
-            move[6] = '\0';
+            move[5] = '\0'; // Ensure null termination
         }
     }
 }
@@ -90,7 +98,6 @@ void clean_sfpipe(SFPipe *pipe) {
 }
 
 void create_sfarray(SFArray* sfa, int depth) {
-
     omp_set_num_threads(4);
     sfa->N = 4;
     sfa->depth = depth;
@@ -107,14 +114,13 @@ void clean_sfarray(SFArray* arr) {
 }
 
 void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
-
 #pragma omp parallel for
     for (size_t i = 0; i < N; i++) {
         int thread_id = omp_get_thread_num();
 
         char fen[512];
         array_to_fen_noep(fen, &boards[i * 69]);
-        int len = strlen(fen);
+        // Unused variable 'len' removed
 
         char move_str[10];
         get_sf_move(&sfa->sfpipe[thread_id], fen, sfa->depth, move_str);
@@ -126,14 +132,13 @@ void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
 }
 
 void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
-
 #pragma omp parallel for
     for (size_t i = 0; i < N; i++) {
         int thread_id = omp_get_thread_num();
 
         char fen[512];
         array_to_fen_noep(fen, &boards[i * 69]);
-        int len = strlen(fen);
+        // Unused variable 'len' removed
 
         char move_str[10];
         get_sf_move(&sfa->sfpipe[thread_id], fen, sfa->depth, move_str);
@@ -145,7 +150,6 @@ void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
 }
 
 void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
-
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
         char fen[512];

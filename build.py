@@ -1,5 +1,7 @@
 from cffi import FFI
 import glob
+import os
+import platform
 
 ffibuilder = FFI()
 
@@ -71,6 +73,29 @@ void board_arr_to_mask(int* board_arr, int *move_mask);
 """
 )
 
+# Get current directory for library path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+lib_dir = os.path.join(current_dir, "lib")
+
+# Determine platform-specific flags
+extra_compile_args = []
+extra_link_args = []
+
+# Add rpath to find the libraries
+extra_link_args.append(f"-Wl,-rpath,{lib_dir}")
+
+# Add architecture flag for macOS arm64
+if platform.system() == "Darwin" and platform.machine() == "arm64":
+    extra_compile_args.append("-arch")
+    extra_compile_args.append("arm64")
+    extra_link_args.append("-arch")
+    extra_link_args.append("arm64")
+
+# Only add OpenMP flags if not on macOS (clang doesn't support -fopenmp by default)
+if platform.system() != "Darwin":
+    extra_compile_args.append("-fopenmp")
+    extra_link_args.append("-fopenmp")
+
 ffibuilder.set_source(
     "chessenv_c",
     """
@@ -79,12 +104,21 @@ ffibuilder.set_source(
     #include "rep.h"
     #include "move_map.h"
 """,
-    sources=["src/chessenv.c", "src/sfarray.c", "src/rep.c", "src/move_map.c"],
-    include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
-    library_dirs=["/usr/local/lib"],
-    extra_compile_args=["-fopenmp"],
-    extra_link_args=["-fopenmp"],
-    libraries=["m", "pthread", "misterqueen", "tinycthread"],
+    sources=[
+        "src/chessenv.c", 
+        "src/sfarray.c", 
+        "src/rep.c", 
+        "src/move_map.c",
+    ],
+    include_dirs=[
+        "MisterQueen/src/", 
+        "MisterQueen/src/deps/tinycthread/", 
+        "src/"
+    ],
+    library_dirs=[lib_dir],
+    extra_compile_args=extra_compile_args,
+    extra_link_args=extra_link_args,
+    libraries=["m", "pthread", "misterqueen"],
 )
 
 if __name__ == "__main__":

@@ -1,3 +1,6 @@
+#ifndef CHESSENV_H
+#define CHESSENV_H
+
 #include "board.h"
 
 struct Env {
@@ -21,3 +24,5 @@ void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int m
 
 void board_arr_to_mask(int* board_arr, int *move_mask);
 void board_to_mask(Board* board, int *move_mask);
+
+#endif /* CHESSENV_H */

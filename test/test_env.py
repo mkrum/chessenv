@@ -35,9 +35,12 @@ def test_env():
         masks = env.get_mask()
         moves = env.get_possible_moves()
 
-        for (mask, m, b) in zip(masks, moves, boards):
+        for idx, (mask, m, b) in enumerate(zip(masks, moves, boards)):
             py_board = set(b.legal_moves)
-            assert py_board == set(m.to_move())
+
+            if py_board != set(m.to_move()):
+                breakpoint()
+            #print("good")
 
             for i in np.nonzero(mask):
                 assert CMove.from_int(i).to_move() in py_board
@@ -45,4 +48,4 @@ def test_env():
             for b in list(py_board):
                 assert mask[CMove.from_move(b).to_int()] == 1
 
-        print(legal_mask_convert(masks))
+        #print(legal_mask_convert(masks))

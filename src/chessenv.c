@@ -14,13 +14,18 @@
 #include "move.h" 
 #include "gen.h"
 
+// Forward declarations
+void random_step_board(Board *board, int n_moves);
+void random_step_board_invert(Board *board, int n_moves);
+void board_to_mask(Board *board, int *move_mask);
+
 /** Resets the boards in the environment */
 void reset_env(Env* env, int n) {
 
     bb_init();
     srand(time(0));
 
-    for (int i = 0; i < n; i++){
+    for (size_t i = 0; i < (size_t)n; i++){
         board_reset(&env->boards[i]);
         
     }
@@ -33,7 +38,7 @@ void invert_env(Env* env, int n) {
     srand(time(0));
 
 #pragma omp parallel for
-    for (int i = 0; i < n; i++){
+    for (size_t i = 0; i < (size_t)n; i++){
         invert_board(&env->boards[i]);
         
     }
@@ -74,14 +79,13 @@ void board_arr_to_mask(int* board_arr, int *move_mask) {
 
 
 void print_board(Env *env) {
-    for (int i = 0; i < env->N; i++){
+    for (size_t i = 0; i < env->N; i++){
         board_print(&env->boards[i]);
     }
 }
 
 /** Returns a board array for the current environment state */
 void get_boards(Env *env, int* boards) {
-    int idx = 0;
     for (size_t i = 0; i < env->N; i++){
         Board board = env->boards[i];
         board_to_array(boards, board);
@@ -123,9 +127,8 @@ void get_possible_moves(Env* env, int* total_moves) {
 
         // Write to array
         int idx = MAX_MOVES * 5 * i;
-        for (int i = 0; i < total_legal; i++) {
-            char move_str[10];
-            move_to_array(&total_moves[idx], possible_moves[i]);
+        for (int j = 0; j < total_legal; j++) {
+            move_to_array(&total_moves[idx], possible_moves[j]);
             idx += 5;
         }
     }
@@ -144,7 +147,7 @@ void reset_boards(Env *env, int *reset) {
 void random_step_board(Board *board, int n_moves) {
 
     Move possible_moves[MAX_MOVES];
-    for (size_t i = 0; i < n_moves; i++) {
+    for (int i = 0; i < n_moves; i++) {
 
         int total = gen_legal_moves(board, possible_moves);
 
@@ -165,6 +168,15 @@ void random_step_board(Board *board, int n_moves) {
         return random_step_board(board, n_moves);
     }
 
+}
+
+/** Implement random_step_board_invert before it's used */
+void random_step_board_invert(Board *board, int n_moves) {
+    random_step_board(board, n_moves);
+
+    if (n_moves % 2 == 1) {
+        invert_board(board);
+    }
 }
 
 /** Resets any done boards, applies a random number of moves in [min_rand, max_rand] */
@@ -189,16 +201,6 @@ void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int m
         }
     }
 }
-
-void random_step_board_invert(Board *board, int n_moves) {
-
-    random_step_board(board, n_moves);
-
-    if (n_moves % 2 == 1) {
-        invert_board(board);
-    }
-}
-
 
 /** Samples a random move for the current environment state  */
 void generate_random_move(Env *env, int *moves) {
