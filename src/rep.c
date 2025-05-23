@@ -28,7 +28,7 @@ void board_to_array(int* boards, Board board) {
             // Get piece map
             char c;
             int piece = board.squares[RF(rank, file)];
-    
+
             switch (PIECE(piece)) {
                 case EMPTY:  c = '.'; break;
                 case PAWN:   c = 'P'; break;
@@ -38,11 +38,11 @@ void board_to_array(int* boards, Board board) {
                 case QUEEN:  c = 'Q'; break;
                 case KING:   c = 'K'; break;
             };
-    
+
             if (COLOR(piece)) {
                 c |= 0x20;
             }
-    
+
             int s = 0;
             switch (c) {
                 case 'P':   s = 1; break;
@@ -58,16 +58,16 @@ void board_to_array(int* boards, Board board) {
                 case 'q':   s = 11; break;
                 case 'k':   s = 12; break;
             };
-            
+
             if (board.ep == (long long int)BIT(RF(rank, file))) {
                 s = 13;
             }
-    
+
             boards[idx] = s;
             ++idx;
         }
     }
-    
+
     // Get side to move
     if (board.color == WHITE) {
         boards[idx] = 14;
@@ -77,7 +77,7 @@ void board_to_array(int* boards, Board board) {
     ++idx;
 
     // Get casling setup
-    int castle = board.castle; 
+    int castle = board.castle;
     if (castle >= 8) {
         boards[idx] = 22;
         castle -= 8;
@@ -108,7 +108,7 @@ void board_to_array(int* boards, Board board) {
         boards[idx] = 17;
     }
     idx++;
-    
+
 }
 
 /* Converts raw array type into a Board type */
@@ -152,7 +152,7 @@ void array_to_board(Board *board, int* board_arr) {
         exit(1);
     }
     idx++;
-    
+
     board->castle = 0;
     if (board_arr[idx] == 22) {
         board->castle |= CASTLE_BLACK_QUEEN;
@@ -230,7 +230,7 @@ void board_to_fen(char *fen, Board board) {
                 blank_count++;
             } else {
                 if (blank_count > 0) {
-                    fen[idx] = blank_count + '0'; 
+                    fen[idx] = blank_count + '0';
                     idx++;
                     blank_count = 0;
                 }
@@ -253,7 +253,7 @@ void board_to_fen(char *fen, Board board) {
         }
 
         if (blank_count > 0) {
-            fen[idx] = blank_count + '0'; 
+            fen[idx] = blank_count + '0';
             idx++;
             blank_count = 0;
         }
@@ -275,7 +275,7 @@ void board_to_fen(char *fen, Board board) {
     fen[idx] = ' ';
     ++idx;
 
-    int castle = board.castle; 
+    int castle = board.castle;
     if (castle >= 8) {
         fen[idx] = 'q';
         idx++;
@@ -409,7 +409,7 @@ void board_to_inverted_fen(char *fen, Board board) {
                 blank_count++;
             } else {
                 if (blank_count > 0) {
-                    fen[idx] = blank_count + '0'; 
+                    fen[idx] = blank_count + '0';
                     idx++;
                     blank_count = 0;
                 }
@@ -422,7 +422,7 @@ void board_to_inverted_fen(char *fen, Board board) {
                     case KING:   fen[idx] = 'K'; break;
                 };
 
-                // Invert the inversion 
+                // Invert the inversion
                 if (!COLOR(piece_int)) {
                     fen[idx] |= 0x20;
                 }
@@ -432,7 +432,7 @@ void board_to_inverted_fen(char *fen, Board board) {
         }
 
         if (blank_count > 0) {
-            fen[idx] = blank_count + '0'; 
+            fen[idx] = blank_count + '0';
             idx++;
             blank_count = 0;
         }
@@ -443,7 +443,7 @@ void board_to_inverted_fen(char *fen, Board board) {
     idx--;
     fen[idx] = ' ';
     idx++;
-        
+
     // Flip these
     if (board.color == WHITE) {
         fen[idx] = 'b';
@@ -455,7 +455,7 @@ void board_to_inverted_fen(char *fen, Board board) {
     fen[idx] = ' ';
     ++idx;
 
-    int castle = board.castle; 
+    int castle = board.castle;
     if (castle >= 8) {
         fen[idx] = 'Q';
         idx++;
@@ -513,7 +513,7 @@ void board_to_fen_noep(char *fen, Board board) {
                 blank_count++;
             } else {
                 if (blank_count > 0) {
-                    fen[idx] = blank_count + '0'; 
+                    fen[idx] = blank_count + '0';
                     idx++;
                     blank_count = 0;
                 }
@@ -536,7 +536,7 @@ void board_to_fen_noep(char *fen, Board board) {
         }
 
         if (blank_count > 0) {
-            fen[idx] = blank_count + '0'; 
+            fen[idx] = blank_count + '0';
             idx++;
             blank_count = 0;
         }
@@ -558,7 +558,7 @@ void board_to_fen_noep(char *fen, Board board) {
     fen[idx] = ' ';
     ++idx;
 
-    int castle = board.castle; 
+    int castle = board.castle;
     if (castle >= 8) {
         fen[idx] = 'q';
         idx++;

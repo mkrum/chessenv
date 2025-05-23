@@ -21,7 +21,7 @@ void legal_mask_to_move_arr_mask(int *move_arr_mask, int *legal_mask, int N) {
         int idx = 0;
         for (size_t j = 0; j < (64 * OFF_TOTAL); j++) {
             if (legal_mask[i * 64 * OFF_TOTAL + j] == 1) {
-                
+
                 int move_arr[5];
                 int_to_move_arr(move_arr, (int*)&j);
 
@@ -87,14 +87,14 @@ void move_arr_to_int(int *move_int, int*move_arr) {
 
 /* Converts an integer move id into a move array. */
 void int_to_move_arr(int *move_arr, int *move_int_arr) {
-    // Using a similar algorithm to OpenSpiel, see: 
+    // Using a similar algorithm to OpenSpiel, see:
     // https://github.com/deepmind/open_spiel/blob/4cd1e5889e447d285eb3f16901ccab5c14e62187/open_spiel/games/chess.cc#L162
-    int move_int = move_int_arr[0];    
+    int move_int = move_int_arr[0];
     int start_pos = (int) floor(move_int / OFF_TOTAL);
 
     move_arr[0] = (int) floor(start_pos / 8);
     move_arr[1] = start_pos - move_arr[0] * 8;
-    
+
     int offset_index = move_int - (start_pos * OFF_TOTAL);
     int offset_id = index_to_offset_id(offset_index);
 
@@ -102,7 +102,7 @@ void int_to_move_arr(int *move_arr, int *move_int_arr) {
     int offset_y;
     int promo;
 
-    id_to_offset(offset_id, &offset_x, &offset_y, &promo); 
+    id_to_offset(offset_id, &offset_x, &offset_y, &promo);
     move_arr[2] = move_arr[0] - offset_x;
     move_arr[3] = move_arr[1] - offset_y;
     move_arr[4] = promo;
@@ -449,7 +449,7 @@ int move_str_to_rep_int(char *move_str) {
     if (strcmp(move_str, "h8n") == 0){return 126;}
     if (strcmp(move_str, "h8b") == 0){return 127;}
     if (strcmp(move_str, "h8q") == 0){return 128;}
-    
+
     // Default return in case no match is found
     return 0;
 }

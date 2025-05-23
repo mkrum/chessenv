@@ -20,7 +20,7 @@ typedef struct SFArray SFArray;
 /* Function declarations */
 void create_sfpipe(SFPipe *sfpipe);
 void clean_sfpipe(SFPipe *pipe);
-void create_sfarray(SFArray* sfa, int depth);
+void create_sfarray(SFArray* sfa, int depth, size_t n_threads);
 void clean_sfarray(SFArray* arr);
 void get_sf_move(SFPipe *sfpipe, char *fen, int depth, char *move);
 void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N);

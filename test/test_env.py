@@ -1,7 +1,7 @@
 import chess
 import numpy as np
-from chessenv import CChessEnv, CBoards, CMoves, CMove
-from chessenv.rep import legal_mask_convert
+
+from chessenv import CBoards, CChessEnv, CMove, CMoves
 
 
 def test_env():
@@ -40,7 +40,7 @@ def test_env():
 
             if py_board != set(m.to_move()):
                 breakpoint()
-            #print("good")
+            # print("good")
 
             for i in np.nonzero(mask):
                 assert CMove.from_int(i).to_move() in py_board
@@ -48,4 +48,4 @@ def test_env():
             for b in list(py_board):
                 assert mask[CMove.from_move(b).to_int()] == 1
 
-        #print(legal_mask_convert(masks))
+        # print(legal_mask_convert(masks))

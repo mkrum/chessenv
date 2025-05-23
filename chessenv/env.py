@@ -1,30 +1,20 @@
-import time
-from dataclasses import dataclass
-
-import chess
-from cffi import FFI
-import chessenv_c
 import numpy as np
+from cffi import FFI
 
-from typing import List
-
+import chessenv_c
+from chessenv.rep import CMoves
 from chessenv_c.lib import (
-    reset_env,
-    invert_env, 
-    get_mask,
-    get_boards,
-    step_env,
-    reset_env,
+    clean_sfarray,
+    create_sfarray,
     generate_random_move,
     generate_stockfish_move,
-    reset_and_randomize_boards,
+    get_boards,
+    get_mask,
+    invert_env,
     reset_and_randomize_boards_invert,
-    create_sfarray,
-    clean_sfarray,
-    get_possible_moves,
+    reset_env,
+    step_env,
 )
-
-from chessenv.rep import CMoves, CBoards
 
 
 class CChessEnv:
@@ -51,7 +41,7 @@ class CChessEnv:
     max_steps: int
         Total number of moves before restart
     draw_reward: float
-        Reward to return on draw/time limit 
+        Reward to return on draw/time limit
     min_random: int
         minimum number of random moves to apply to the starting board
     max_random: int
@@ -59,7 +49,10 @@ class CChessEnv:
     invert: bool
         ensure the side to move is always white
     """
-    def __init__(self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False):
+
+    def __init__(
+        self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False
+    ):
         self.ffi = FFI()
         self.n = n
         self.max_step = max_step
@@ -80,13 +73,12 @@ class CChessEnv:
         state: np.array
             (N, 69) vector representing the board state
         mask: np.array
-            (N, 5632) vector represeting the move mask 
+            (N, 5632) vector represeting the move mask
         """
         self.t = np.zeros(self.n)
         reset_env(self._env, self.n)
         mask = self.get_mask()
         return self.get_state(), mask
-
 
     def step(self, move_arr):
         """
@@ -97,7 +89,7 @@ class CChessEnv:
         state: np.array
             (N, 69) vector representing the board state
         mask: np.array
-            (N, 5632) vector represeting the move mask 
+            (N, 5632) vector represeting the move mask
         reward: np.array
             (N, 1) vector represeting the reward
         done: np.array
@@ -122,10 +114,7 @@ class CChessEnv:
         return state, mask, reward, total_done
 
     def invert_boards(self):
-        invert_env(
-            self._env,
-            self.n
-        )
+        invert_env(self._env, self.n)
 
     def push_moves(self, move_arr):
         """
@@ -158,16 +147,31 @@ class CChessEnv:
 
         if self.invert:
             self.invert_boards()
-        
+
         if self.invert:
-            reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+            reset_and_randomize_boards_invert(
+                self._env,
+                self.ffi.cast("int *", done.ctypes.data),
+                self.min_random,
+                self.max_random,
+            )
         else:
-            reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+            reset_and_randomize_boards_invert(
+                self._env,
+                self.ffi.cast("int *", done.ctypes.data),
+                self.min_random,
+                self.max_random,
+            )
         return done, reward
 
     def reset_boards(self, done):
         done = np.int32(done)
-        reset_and_randomize_boards_invert(self._env, self.ffi.cast("int *", done.ctypes.data), self.min_random, self.max_random)
+        reset_and_randomize_boards_invert(
+            self._env,
+            self.ffi.cast("int *", done.ctypes.data),
+            self.min_random,
+            self.max_random,
+        )
         self.t[(done == 1)] = 0
 
     def get_state(self):
@@ -179,11 +183,11 @@ class CChessEnv:
         mask_arr = self._make_mask_arr()
         get_mask(self._env, self.ffi.cast("int *", mask_arr.ctypes.data))
         return mask_arr.reshape(self.n, 88 * 64)
-    
+
     def get_possible_moves(self):
         """
         Get all possible moves for each board in the environment.
-        
+
         Returns
         -------
         list:
@@ -221,11 +225,51 @@ class CChessEnv:
 class SFCChessEnv(CChessEnv):
     """
     RL Environment that interfaces with Stockfish
+
+    This environment uses Stockfish to generate opponent moves, providing
+    stronger and more strategic gameplay compared to random move selection.
+
+    Parameters
+    ----------
+    n: int
+        Number of parallel environments
+    depth: int
+        Stockfish search depth (higher is stronger but slower)
+    max_step: int
+        Maximum number of steps before terminating episode with draw_reward
+    draw_reward: float
+        Reward value returned on draw (timeout)
+    min_random: int
+        Minimum number of random moves at start of game
+    max_random: int
+        Maximum number of random moves at start of game
+    invert: bool
+        Whether to invert board after each move to ensure white to move
     """
-    def __init__(self, n, depth=1, max_step=100, draw_reward=0, min_random=0, max_random=0):
-        super().__init__(n, max_step=max_step, draw_reward=draw_reward, min_random=min_random, max_random=max_random)
+
+    def __init__(
+        self,
+        n,
+        depth=1,
+        max_step=100,
+        draw_reward=0,
+        min_random=0,
+        max_random=0,
+        invert=False,
+    ):
+        super().__init__(
+            n,
+            max_step=max_step,
+            draw_reward=draw_reward,
+            min_random=min_random,
+            max_random=max_random,
+            invert=invert,
+        )
         self._sfa = chessenv_c.ffi.new("SFArray *")
+        # We need enough Stockfish instances to handle n environments
+        # The third parameter is the number of threads/stockfish instances to use
         create_sfarray(self._sfa, depth, n)
+        self.depth = depth
 
     def sample_opponent(self):
         move_arr = self._make_move_arr()
@@ -236,3 +280,50 @@ class SFCChessEnv(CChessEnv):
 
     def __del__(self):
         clean_sfarray(self._sfa)
+
+
+class RandomChessEnv(CChessEnv):
+    """
+    RL Environment that uses random move selection for the opponent
+
+    This environment selects opponent moves uniformly at random from the set of legal moves.
+    It's useful for simple training scenarios or baseline comparisons.
+
+    Parameters
+    ----------
+    n: int
+        Number of parallel environments
+    max_step: int
+        Maximum number of steps before terminating episode with draw_reward
+    draw_reward: float
+        Reward value returned on draw (timeout)
+    min_random: int
+        Minimum number of random moves at start of game
+    max_random: int
+        Maximum number of random moves at start of game
+    invert: bool
+        Whether to invert board after each move to ensure white to move
+    """
+
+    def __init__(
+        self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False
+    ):
+        super().__init__(
+            n,
+            max_step=max_step,
+            draw_reward=draw_reward,
+            min_random=min_random,
+            max_random=max_random,
+            invert=invert,
+        )
+
+    def sample_opponent(self):
+        """
+        Samples random moves for the opponent from the set of legal moves
+
+        Returns
+        -------
+        np.array
+            Array of move integers, one for each environment
+        """
+        return self.random()

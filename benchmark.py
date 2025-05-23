@@ -3,21 +3,21 @@ File to do performance benchmarking for the parallelized C version vs the
 python versions.
 """
 
-import time
-import pyspiel
-import random
-import numpy as np
-from open_spiel.python.rl_environment import Environment, StepType
-from chessenv.env import CChessEnv
 import multiprocessing as mp
+import random
+import time
 
-from chessenv.rep import CMove
+import numpy as np
+import pyspiel
+from open_spiel.python.rl_environment import Environment, StepType
+
+from chessenv.env import CChessEnv
 
 
 def random_action(masks):
     probs = masks / np.sum(masks, axis=1).reshape(-1, 1)
     actions = np.int32(np.zeros(len(masks)))
-    for (i, p) in enumerate(probs):
+    for i, p in enumerate(probs):
         actions[i] = np.random.choice(len(p), p=p)
     return actions
 
@@ -33,7 +33,7 @@ class PySpielChessEnvSequential:
         states = [o.observations["info_state"][0] for o in out]
 
         legal_mask = np.zeros((self.n, self.action_width))
-        for (i, la) in enumerate([o.observations["legal_actions"] for o in out]):
+        for i, la in enumerate([o.observations["legal_actions"] for o in out]):
             for a in la:
                 legal_mask[i, a] = 1.0
 
@@ -45,7 +45,7 @@ class PySpielChessEnvSequential:
         rewards = np.zeros((self.n,))
         dones = np.zeros((self.n,))
 
-        for (i, a) in enumerate(action):
+        for i, a in enumerate(action):
             a = np.array([a])
 
             out = self._envs[i].step(a)
@@ -55,7 +55,6 @@ class PySpielChessEnvSequential:
                 rewards[i] = out.rewards[0]
                 out = self._envs[i].reset()
             else:
-                current_player = self._envs[i]
                 response = random.sample(
                     out.observations["legal_actions"][out.current_player()], 1
                 )
@@ -151,12 +150,9 @@ def benchmark(env, n, n_steps=100):
 if __name__ == "__main__":
 
     for n in [1, 2, 4, 8, 16, 32, 128, 256, 512, 1024]:
-        try:
-            times = benchmark(PySpielChessEnvParallel, n)
-            times = list(map(str, times))
-            print(f'pyspiel_parallel,{n},{",".join(times)}')
-        except:
-            pass
+        times = benchmark(PySpielChessEnvParallel, n)
+        times = list(map(str, times))
+        print(f'pyspiel_parallel,{n},{",".join(times)}')
 
         times = benchmark(PySpielChessEnvSequential, n)
         times = list(map(str, times))

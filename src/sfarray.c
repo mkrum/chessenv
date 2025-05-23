@@ -22,7 +22,7 @@ static inline void omp_set_num_threads(int num) { (void)num; }
 #include "rep.h"
 
 #include "board.h"
-#include "move.h" 
+#include "move.h"
 #include "gen.h"
 
 void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
@@ -42,20 +42,10 @@ void get_sf_move(SFPipe *sfpipe, char * fen, int depth, char *move) {
     while (strcmp(start, "best") != 0) {
 
         if (!fgets(buf, 1024, sfpipe->in)) {
-            // Try again?
-            clean_sfpipe(sfpipe);
-            create_sfpipe(sfpipe);
 
-            sprintf(cmd, "position fen %s\n", fen);
-            printf("%s", cmd);
+	    fprintf(stderr, "Stockfish failed on: %s\n", fen);
+	    exit(1);
 
-            move[0] = 'e';
-            move[1] = '2';
-            move[2] = 'e';
-            move[3] = '4';
-            move[4] = ' ';
-            move[5] = '\0';
-            break;
         } else {
             strncpy(start, buf, 4);
             start[4] = '\0'; // Make sure it's null-terminated
@@ -77,8 +67,10 @@ void create_sfpipe(SFPipe *sfpipe) {
         dup2(out_pipe_f[0], STDIN_FILENO);
         dup2(in_pipe_f[1], STDOUT_FILENO);
         dup2(in_pipe_f[1], STDERR_FILENO);
-        
-        execl("/home/michael/stockfish/src/stockfish", "stockfish", (char*) NULL);
+
+        execlp("stockfish", "stockfish", (char*) NULL);
+
+        fprintf(stderr, "Failed to find stockfish executable\n");
         exit(1);
     }
 
@@ -97,9 +89,27 @@ void clean_sfpipe(SFPipe *pipe) {
     fclose(pipe->out);
 }
 
-void create_sfarray(SFArray* sfa, int depth) {
-    omp_set_num_threads(4);
-    sfa->N = 4;
+void create_sfarray(SFArray* sfa, int depth, size_t n_threads) {
+    // Default to 4 threads/pipes if not specified
+    size_t num_threads = 4;
+
+    // If n_threads is provided and valid, use it
+    if (n_threads > 0) {
+        num_threads = n_threads;
+    } else {
+        #ifdef _OPENMP
+        // Otherwise use the number of available processors if OpenMP is available
+        num_threads = omp_get_num_procs();
+        if (num_threads > 8) num_threads = 8;  // Cap at 8 to avoid too many stockfish instances
+        if (num_threads < 1) num_threads = 1;  // Ensure at least 1 thread
+        #endif
+    }
+
+    // Cap at 256 which is the max size of sfpipe array
+    if (num_threads > 256) num_threads = 256;
+
+    omp_set_num_threads(num_threads);
+    sfa->N = num_threads;
     sfa->depth = depth;
 
     for (size_t i = 0; i < sfa->N; i++) {
@@ -116,7 +126,8 @@ void clean_sfarray(SFArray* arr) {
 void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
 #pragma omp parallel for
     for (size_t i = 0; i < N; i++) {
-        int thread_id = omp_get_thread_num();
+        // Use thread_id modulo number of Stockfish instances
+        int thread_id = omp_get_thread_num() % sfa->N;
 
         char fen[512];
         array_to_fen_noep(fen, &boards[i * 69]);
@@ -134,7 +145,8 @@ void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N) {
 void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
 #pragma omp parallel for
     for (size_t i = 0; i < N; i++) {
-        int thread_id = omp_get_thread_num();
+        // Use thread_id modulo number of Stockfish instances
+        int thread_id = omp_get_thread_num() % sfa->N;
 
         char fen[512];
         array_to_fen_noep(fen, &boards[i * 69]);
@@ -152,13 +164,16 @@ void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
 void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
+        // Use modulo to wrap around if we have more environments than Stockfish instances
+        int sf_idx = i % sfa->N;
+
         char fen[512];
         char move_str[10];
-        
+
         Board board = env->boards[i];
         board_to_fen(fen, board);
 
-        get_sf_move(&sfa->sfpipe[i], fen, sfa->depth, move_str);
+        get_sf_move(&sfa->sfpipe[sf_idx], fen, sfa->depth, move_str);
 
         int move_arr[5];
         move_str_to_array(move_arr, move_str);

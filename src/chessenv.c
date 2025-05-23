@@ -11,7 +11,7 @@
 #include "move_map.h"
 
 #include "board.h"
-#include "move.h" 
+#include "move.h"
 #include "gen.h"
 
 // Forward declarations
@@ -27,7 +27,7 @@ void reset_env(Env* env, int n) {
 
     for (size_t i = 0; i < (size_t)n; i++){
         board_reset(&env->boards[i]);
-        
+
     }
     env->N = n;
 }
@@ -40,7 +40,7 @@ void invert_env(Env* env, int n) {
 #pragma omp parallel for
     for (size_t i = 0; i < (size_t)n; i++){
         invert_board(&env->boards[i]);
-        
+
     }
     env->N = n;
 }
@@ -58,12 +58,12 @@ void get_mask(Env* env, int *move_mask) {
 void board_to_mask(Board *board, int *move_mask) {
     Move possible_moves[MAX_MOVES];
     int total_legal = gen_legal_moves(board, possible_moves);
-    
+
     // Write them to array
     for (int j = 0; j < total_legal; j++) {
         int move_arr[5];
         move_to_array(move_arr, possible_moves[j]);
-    
+
         int move_int;
         move_arr_to_int(&move_int, move_arr);
         move_mask[move_int] = 1;
@@ -99,7 +99,7 @@ void step_env(Env *env, int *moves, int *dones, int *reward) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
-        
+
         // Convert move id to actual move, apply to board
         Move move;
         int_to_move(&move, moves[i]);
@@ -120,7 +120,7 @@ void get_possible_moves(Env* env, int* total_moves) {
 
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
-        
+
         // Get possible moves
         Move possible_moves[MAX_MOVES];
         int total_legal = gen_legal_moves(&env->boards[i], possible_moves);
@@ -217,7 +217,7 @@ void generate_random_move(Env *env, int *moves) {
 
         int random_idx = rand() % total;
         Move move = possible_moves[random_idx];
-        
+
         move_to_int(&moves[i], move);
     }
 }

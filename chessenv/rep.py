@@ -1,20 +1,19 @@
 from dataclasses import dataclass
 
-from typing import List
 import chess
 import numpy as np
 from cffi import FFI
 
 from chessenv_c.lib import (
-    fen_to_array,
     array_to_fen,
-    move_str_to_array,
     array_to_move_str,
     array_to_possible,
-    move_arr_to_int,
     board_arr_to_mask,
+    fen_to_array,
     int_to_move_arr,
     legal_mask_to_move_arr_mask,
+    move_arr_to_int,
+    move_str_to_array,
 )
 
 _ffi = FFI()
@@ -73,6 +72,7 @@ class CMove:
     def to_int(self):
         return _move_arr_to_int(self.data)
 
+
 @dataclass(frozen=True)
 class CBoard:
     """
@@ -125,7 +125,7 @@ class CBoard:
     def to_board(self):
         fen = self.to_fen()
         return chess.Board(fen)
-    
+
     def to_possible_moves(self):
         # Replace this with a C openmp version
         return CMoves.from_array(_array_to_possible(self.data))
@@ -151,6 +151,7 @@ class CMoves:
     a group of CMoves. Useful for interacting with the environment, which will
     return all of the moves within a single array. See CMove.
     """
+
     data: np.array
 
     @classmethod
@@ -177,7 +178,7 @@ class CMoves:
     def from_str(cls, move_list):
 
         data = np.zeros(5 * len(move_list), dtype=np.int32)
-        for (i, move) in enumerate(move_list):
+        for i, move in enumerate(move_list):
             data[5 * i : 5 * (i + 1)] = _move_str_to_array(move)
 
         return cls(data)
@@ -202,6 +203,7 @@ class CMoves:
 
     def to_array(self):
         return self.data
+
 
 @dataclass(frozen=True)
 class CBoards:
@@ -237,7 +239,7 @@ class CBoards:
     def from_fen(cls, fen_str_list):
 
         data = np.zeros(69 * len(fen_str_list), dtype=np.int32)
-        for (i, idx) in enumerate(range(0, data.shape[0], 69)):
+        for i, idx in enumerate(range(0, data.shape[0], 69)):
             data[idx : idx + 69] = _fen_to_array(fen_str_list[i])
 
         return cls(data)
@@ -254,14 +256,16 @@ class CBoards:
         fens = self.to_fen()
         return [chess.Board(f) for f in fens]
 
+
 """
 Below is the wrapper code for interacting with the C library. These functions
 wrap the underlying C defintion with a function that only operates on numpy
 arrays for simplicity. See src/ and build.py
 """
 
+
 def _fen_to_array(fen_str):
-    """ Converts a fen to a board array """
+    """Converts a fen to a board array"""
     board_arr = np.zeros(shape=(69), dtype=np.int32)
     x = _ffi.new(f"char[{len(fen_str) + 10}]", bytes(fen_str, encoding="utf-8"))
     fen_to_array(_ffi.cast("int *", board_arr.ctypes.data), _ffi.cast("char *", x))
@@ -270,8 +274,8 @@ def _fen_to_array(fen_str):
 
 
 def _array_to_fen(board_arr):
-    """ Converts a board array to fen """
-    x = _ffi.new(f"char[512]", bytes("\0" * 512, encoding="utf-8"))
+    """Converts a board array to fen"""
+    x = _ffi.new("char[512]", bytes("\0" * 512, encoding="utf-8"))
     array_to_fen(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
     _ffi.release(x)
@@ -288,17 +292,17 @@ def _array_to_fen(board_arr):
 
 
 def _move_str_to_array(move_str):
-    """ Converts string representation of a move ("e2e4") to an array """
+    """Converts string representation of a move ("e2e4") to an array"""
     move_arr = np.zeros(shape=(5), dtype=np.int32)
-    x = _ffi.new(f"char[10]", bytes(move_str, encoding="utf-8"))
+    x = _ffi.new("char[10]", bytes(move_str, encoding="utf-8"))
     move_str_to_array(_ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("char *", x))
     _ffi.release(x)
     return move_arr
 
 
 def _array_to_move_str(move_arr):
-    """ Converts move array to a string representation of a move ("e2e4") """
-    x = _ffi.new(f"char[10]", bytes("\0" * 10, encoding="utf-8"))
+    """Converts move array to a string representation of a move ("e2e4")"""
+    x = _ffi.new("char[10]", bytes("\0" * 10, encoding="utf-8"))
     array_to_move_str(x, _ffi.cast("int *", move_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
 
@@ -311,7 +315,7 @@ def _array_to_move_str(move_arr):
 
 
 def _array_to_possible(data):
-    """ Converts a board array to a move array of the possible moves """
+    """Converts a board array to a move array of the possible moves"""
     move_arr = np.zeros(shape=(256 * 5), dtype=np.int32)
     array_to_possible(
         _ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("int*", data.ctypes.data)
@@ -323,7 +327,7 @@ def _array_to_possible(data):
 
 
 def _move_arr_to_int(move_arr):
-    """ Converts a move array to a move id """
+    """Converts a move array to a move id"""
     move_int = np.zeros(shape=(1,), dtype=np.int32)
     move_arr_to_int(
         _ffi.cast("int *", move_int.ctypes.data),
@@ -333,7 +337,7 @@ def _move_arr_to_int(move_arr):
 
 
 def _int_to_move_arr(move_int):
-    """ Converts a move id to a move array """
+    """Converts a move id to a move array"""
     move_int = np.array([move_int])
     move_arr = np.zeros(shape=(5,), dtype=np.int32)
     int_to_move_arr(
@@ -344,7 +348,7 @@ def _int_to_move_arr(move_int):
 
 
 def legal_mask_convert(legal_mask):
-    """ Converts the id version of the move mask into an array based version """
+    """Converts the id version of the move mask into an array based version"""
     n = legal_mask.shape[0]
     legal_mask = legal_mask.flatten()
 
@@ -367,8 +371,9 @@ def legal_mask_convert(legal_mask):
 
     return move_map
 
+
 def _board_arr_to_mask(board_arr):
-    """ Converts a move array to a move id """
+    """Converts a move array to a move id"""
     board_arr = np.int32(board_arr)
     move_mask = np.zeros(shape=(64 * 88), dtype=np.int32)
     board_arr_to_mask(

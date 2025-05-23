@@ -13,7 +13,7 @@ RUN gcc -shared -o /usr/local/lib/libmisterqueen.so /workdir/MisterQueen/build/r
 RUN gcc -shared -o /usr/local/lib/libtinycthread.so /workdir/MisterQueen/build/release/deps/tinycthread/tinycthread.o -lpthread
 
 RUN apt-get install -y python3.8-dev libffi-dev
-RUN python3.8 -m pip install cython 
+RUN python3.8 -m pip install cython
 RUN python3.8 -m pip install cffi numpy
 
 WORKDIR /workdir/

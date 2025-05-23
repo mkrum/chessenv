@@ -1,11 +1,11 @@
+import numpy as np
+from cffi import FFI
 
 from chessenv.rep import CBoard
 from chessenv_c.lib import invert_array
-import numpy as np
-
-from cffi import FFI
 
 _ffi = FFI()
+
 
 def _invert_array(board_arr):
     board_arr = np.int32(board_arr)
@@ -21,5 +21,6 @@ def test_invert():
     print(fen)
     print(CBoard.from_array(_invert_array(board.to_array())).to_fen())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_invert()

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "cffi>=1.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chessenv"
+version = "0.1.0"
+description = "Chess environment for reinforcement learning"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+dependencies = [
+    "cffi>=1.0.0",
+    "python-chess",
+]
+
+[tool.setuptools]
+packages = ["chessenv"]

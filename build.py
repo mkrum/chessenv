@@ -1,7 +1,7 @@
-from cffi import FFI
-import glob
 import os
 import platform
+
+from cffi import FFI
 
 ffibuilder = FFI()
 
@@ -41,7 +41,7 @@ void reset_boards(Env *env, int *reset);
 void get_possible_moves(Env* env, int*);
 
 void generate_stockfish_move(Env* env, SFArray *sfa, int* moves);
-void create_sfarray(SFArray *sfa, int depth);
+void create_sfarray(SFArray *sfa, int depth, size_t n_threads);
 void clean_sfarray(SFArray* arr);
 
 void fen_to_array(int* boards, char *fen);
@@ -63,7 +63,7 @@ void array_to_inverted_fen(char* fen, int* boards);
 
 void invert_board(Board *boards);
 void invert_array(int *boards);
-  
+
 void invert_env(Env* env, int n);
 void reset_and_randomize_boards_invert(Env *env, int *reset, int min_rand, int max_rand);
 void board_arr_to_moves(int* moves, SFArray *sfa, int* boards, size_t N);
@@ -105,16 +105,12 @@ ffibuilder.set_source(
     #include "move_map.h"
 """,
     sources=[
-        "src/chessenv.c", 
-        "src/sfarray.c", 
-        "src/rep.c", 
+        "src/chessenv.c",
+        "src/sfarray.c",
+        "src/rep.c",
         "src/move_map.c",
     ],
-    include_dirs=[
-        "MisterQueen/src/", 
-        "MisterQueen/src/deps/tinycthread/", 
-        "src/"
-    ],
+    include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
     library_dirs=[lib_dir],
     extra_compile_args=extra_compile_args,
     extra_link_args=extra_link_args,
