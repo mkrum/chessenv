@@ -81,8 +81,8 @@ lib_dir = os.path.join(current_dir, "lib")
 extra_compile_args = []
 extra_link_args = []
 
-# Add rpath to find the libraries
-extra_link_args.append(f"-Wl,-rpath,{lib_dir}")
+# We don't need rpath flags since we'll be using dynamic loading
+# This makes the package more portable
 
 # Add architecture flag for macOS arm64
 if platform.system() == "Darwin" and platform.machine() == "arm64":

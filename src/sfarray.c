@@ -10,8 +10,10 @@
 /* Handle OpenMP conditionally */
 #ifdef _OPENMP
 #include <omp.h>
+#define HAVE_OPENMP 1
 #else
 /* Define OpenMP functions as no-ops for platforms without OpenMP */
+#define HAVE_OPENMP 0
 static inline int omp_get_thread_num() { return 0; }
 static inline void omp_set_num_threads(int num) { (void)num; }
 #endif
@@ -112,6 +114,15 @@ void create_sfarray(SFArray* sfa, int depth, size_t n_threads) {
     sfa->N = num_threads;
     sfa->depth = depth;
 
+    // Print OpenMP status
+    printf("OpenMP Status: %s\n", HAVE_OPENMP ? "Enabled" : "Disabled");
+    printf("Number of threads: %zu\n", num_threads);
+
+    #ifdef _OPENMP
+    printf("OpenMP Version: %d\n", _OPENMP);
+    printf("Max threads available: %d\n", omp_get_max_threads());
+    #endif
+
     for (size_t i = 0; i < sfa->N; i++) {
         create_sfpipe(&sfa->sfpipe[i]);
     }
@@ -162,6 +173,8 @@ void board_arr_to_move_int(int* moves, SFArray *sfa, int* boards, size_t N) {
 }
 
 void generate_stockfish_move(Env *env, SFArray *sfa, int* moves) {
+    // When OpenMP is disabled, this section runs sequentially
+    // but still distributes environments across available Stockfish instances
 #pragma omp parallel for
     for (size_t i = 0; i < env->N; i++) {
         // Use modulo to wrap around if we have more environments than Stockfish instances

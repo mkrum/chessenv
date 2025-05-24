@@ -11,6 +11,7 @@ requires-python = ">=3.6"
 license = {text = "MIT"}
 dependencies = [
     "cffi>=1.0.0",
+    "open-spiel>=1.1.0",
     "python-chess",
 ]
 
