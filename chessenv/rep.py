@@ -60,7 +60,18 @@ class CMove:
 
     @classmethod
     def from_array(cls, arr):
-        return cls(arr)
+        # Check if array contains floats - if so, convert to int32 or raise error
+        arr_np = np.asarray(arr)
+        if not np.issubdtype(arr_np.dtype, np.integer):
+            # If all values are effectively integers (no decimal part), convert them
+            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
+                arr_np = arr_np.astype(np.int32)
+            else:
+                raise ValueError(
+                    f"Moves array must contain integer values, received {arr_np.dtype}. "
+                    "Values must be convertible to integers without loss of information."
+                )
+        return cls(arr_np)
 
     def to_array(self):
         return self.data
@@ -105,7 +116,18 @@ class CBoard:
 
     @classmethod
     def from_array(cls, arr):
-        return cls(arr)
+        # Check if array contains floats - if so, convert to int32 or raise error
+        arr_np = np.asarray(arr)
+        if not np.issubdtype(arr_np.dtype, np.integer):
+            # If all values are effectively integers (no decimal part), convert them
+            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
+                arr_np = arr_np.astype(np.int32)
+            else:
+                raise ValueError(
+                    f"Board array must contain integer values, received {arr_np.dtype}. "
+                    "Values must be convertible to integers without loss of information."
+                )
+        return cls(arr_np)
 
     def to_fen(self):
         return _array_to_fen(self.data)
@@ -127,8 +149,15 @@ class CBoard:
         return chess.Board(fen)
 
     def to_possible_moves(self):
-        # Replace this with a C openmp version
-        return CMoves.from_array(_array_to_possible(self.data))
+        """
+        Get all possible moves for the board using C library only.
+
+        Returns
+        -------
+        CMoves:
+         CMoves object containing all legal moves
+        """
+        return _get_board_legal_moves(self.data)
 
     def __str__(self):
         board = self.to_board()
@@ -156,6 +185,9 @@ class CMoves:
 
     @classmethod
     def from_int(cls, move_ints):
+        # Handle empty move_ints array (no legal moves)
+        if len(move_ints) == 0:
+            return cls(np.zeros((0,), dtype=np.int32))
         return cls(np.concatenate([CMove.from_int(m).to_array() for m in move_ints]))
 
     def to_int(self):
@@ -185,6 +217,10 @@ class CMoves:
 
     def to_str(self):
         moves = []
+        # Handle empty data array (no moves)
+        if self.data.size == 0:
+            return moves
+
         for idx in range(0, self.data.shape[0], 5):
             moves.append(_array_to_move_str(self.data[idx : idx + 5]))
         return moves
@@ -199,7 +235,18 @@ class CMoves:
 
     @classmethod
     def from_array(cls, arr):
-        return cls(arr)
+        # Check if array contains floats - if so, convert to int32 or raise error
+        arr_np = np.asarray(arr)
+        if not np.issubdtype(arr_np.dtype, np.integer):
+            # If all values are effectively integers (no decimal part), convert them
+            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
+                arr_np = arr_np.astype(np.int32)
+            else:
+                raise ValueError(
+                    f"Moves array must contain integer values, received {arr_np.dtype}. "
+                    "Values must be convertible to integers without loss of information."
+                )
+        return cls(arr_np)
 
     def to_array(self):
         return self.data
@@ -218,16 +265,38 @@ class CBoards:
     data: np.array
 
     def to_possible_moves(self):
+        """
+        Get all possible moves for each board in the stack using C library only.
+
+        Returns
+        -------
+        list:
+            List of CMoves objects, one for each board
+        """
         moves = []
         for idx in range(0, self.data.shape[0], 69):
-            moves.append(
-                CMoves.from_array(_array_to_possible(self.data[idx : idx + 69]))
-            )
+            # Get this board's array
+            board_array = self.data[idx : idx + 69]
+
+            # Use the C-only implementation
+            moves.append(_get_board_legal_moves(board_array))
+
         return moves
 
     @classmethod
     def from_array(cls, arr):
-        return cls(arr)
+        # Check if array contains floats - if so, convert to int32 or raise error
+        arr_np = np.asarray(arr)
+        if not np.issubdtype(arr_np.dtype, np.integer):
+            # If all values are effectively integers (no decimal part), convert them
+            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
+                arr_np = arr_np.astype(np.int32)
+            else:
+                raise ValueError(
+                    f"Boards array must contain integer values, received {arr_np.dtype}. "
+                    "Values must be convertible to integers without loss of information."
+                )
+        return cls(arr_np)
 
     def to_fen(self):
         fens = []
@@ -314,16 +383,55 @@ def _array_to_move_str(move_arr):
     return x_str
 
 
-def _array_to_possible(data):
-    """Converts a board array to a move array of the possible moves"""
-    move_arr = np.zeros(shape=(256 * 5), dtype=np.int32)
+def _get_board_legal_moves(board_array):
+    """
+    Get legal moves for a board array using C library.
+
+    Parameters
+    ----------
+    board_array : numpy.ndarray
+        The board array to get legal moves for
+
+    Returns
+    -------
+    CMoves
+        CMoves object containing all legal moves
+    """
+    # We'll call array_to_possible, which calls fen_to_possible internally
+    # This uses the C function gen_legal_moves to generate all legal moves
+
+    # Maximum number of legal moves in chess (practical limit)
+    max_moves = 256
+
+    # Allocate space for the moves (5 elements per move)
+    move_buffer = np.zeros(max_moves * 5, dtype=np.int32)
+
+    # Make sure the board array is a copy and int32
+    board_arr = np.array(board_array, dtype=np.int32)
+
+    # Call the C function to fill the buffer with moves
     array_to_possible(
-        _ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("int*", data.ctypes.data)
+        _ffi.cast("int *", move_buffer.ctypes.data),
+        _ffi.cast("int *", board_arr.ctypes.data),
     )
-    move_arr = move_arr.reshape(256, 5)
-    move_arr = move_arr[np.sum(move_arr, axis=1) > 0]
-    move_arr = move_arr.flatten()
-    return move_arr
+
+    # Count how many moves were generated (non-zero entries)
+    num_moves = 0
+    for i in range(0, move_buffer.shape[0], 5):
+        if np.sum(move_buffer[i : i + 5]) > 0:  # If any element is non-zero
+            num_moves += 1
+        else:
+            break  # Stop at first all-zero entry
+
+    # If no moves were found, return empty CMoves
+    if num_moves == 0:
+        return CMoves(np.zeros(0, dtype=np.int32))
+
+    # Extract just the moves that were generated
+    valid_moves = move_buffer[: num_moves * 5]
+
+    # Return as CMoves object
+    return CMoves(valid_moves)
 
 
 def _move_arr_to_int(move_arr):
@@ -373,7 +481,14 @@ def legal_mask_convert(legal_mask):
 
 
 def _board_arr_to_mask(board_arr):
-    """Converts a move array to a move id"""
+    """
+    Converts a board array to a move mask.
+
+    NOTE: This function on its own only generates pawn moves, castling moves, and some
+    other basic moves, but may not generate all knight, bishop, rook, and queen moves.
+    For reliable move generation, use CBoard.to_possible_moves, CBoards.to_possible_moves,
+    or CChessEnv.get_possible_moves which access the native C chess engine correctly.
+    """
     board_arr = np.int32(board_arr)
     move_mask = np.zeros(shape=(64 * 88), dtype=np.int32)
     board_arr_to_mask(
