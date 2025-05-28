@@ -1,0 +1,30 @@
+
+from chessenv.sfa import SFArray
+import time
+
+from cffi import FFI
+from chessenv_c.lib import (
+    create_sfarray,
+    clean_sfarray,
+    board_arr_to_moves,
+)
+import chessenv_c
+import numpy as np
+
+from chessenv.rep import CBoard
+
+sfa = SFArray(1)
+
+fen = "Q1b1kbn1/2Pp1p2/2n1p3/p6p/7p/2q4P/1rP1PPP1/RNBK1BNR w KQ a6"
+print(CBoard.from_fen("Q1b1kbn1/2Pp1p2/2n1p3/p6p/7p/2q4P/1rP1PPP1/RNBK1BNR w KQ a6").to_fen())
+
+N = 1
+board_arr = np.stack([np.int32(CBoard.from_fen(fen).to_array()) for _ in range(N)])
+start = time.time()
+
+out = sfa.get_moves(board_arr)
+
+print(time.time() - start)
+print(out.shape)
+
+out = sfa.get_moves(board_arr)

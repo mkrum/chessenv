@@ -1,9 +1,15 @@
 import os
+import platform
 import shutil
 import subprocess
 import sys
 
 import setuptools
+
+try:
+    from wheel.bdist_wheel import bdist_wheel
+except ImportError:
+    bdist_wheel = None
 from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -36,7 +42,7 @@ def copy_libraries():
 
     # Create destination directory
     dst_lib_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "chessenv", "lib"
+        os.path.dirname(os.path.abspath(__file__)), "fastchessenv", "lib"
     )
     os.makedirs(dst_lib_dir, exist_ok=True)
 
@@ -82,23 +88,82 @@ class CustomInstall(install):
         install.run(self)
 
 
+if bdist_wheel is not None:
+
+    class CustomBdistWheel(bdist_wheel):
+        """Custom wheel building command that tags wheels as platform-specific"""
+
+        def finalize_options(self):
+            bdist_wheel.finalize_options(self)
+            # Mark this package as platform-specific (not pure Python)
+            self.root_is_pure = False
+
+        def get_tag(self):
+            # Get the platform tag
+            python_tag, abi_tag, platform_tag = bdist_wheel.get_tag(self)
+
+            # Use a specific platform tag based on the system and architecture
+            system = platform.system().lower()
+            machine = platform.machine().lower()
+
+            if system == "darwin":
+                # macOS - arm64 or x86_64
+                if machine == "arm64":
+                    platform_tag = "macosx_11_0_arm64"
+                else:
+                    platform_tag = "macosx_10_9_x86_64"
+            elif system == "linux":
+                # Linux - x86_64 or aarch64
+                if "arm" in machine or "aarch64" in machine:
+                    platform_tag = "manylinux2014_aarch64"
+                else:
+                    platform_tag = "manylinux2014_x86_64"
+
+            return python_tag, abi_tag, platform_tag
+
+    # Create a dictionary to hold command classes
+    cmdclass = {
+        "build_py": CustomBuildPy,
+        "develop": CustomDevelop,
+        "install": CustomInstall,
+        "bdist_wheel": CustomBdistWheel,
+    }
+else:
+    # Without wheel, use standard command classes
+    cmdclass = {
+        "build_py": CustomBuildPy,
+        "develop": CustomDevelop,
+        "install": CustomInstall,
+    }
+
+
 setuptools.setup(
-    name="chessenv",
+    name="fastchessenv",
     version="0.1.0",
     description="Chess Environment for Reinforcement Learning",
-    author="Michael Krumdick",
-    packages=["chessenv"],
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/yourusername/chessenv",  # Update with your GitHub repo
+    packages=["fastchessenv", "fastchessenv.lib"],
     package_data={
-        "chessenv": ["lib/*.so"],
+        "fastchessenv": ["lib/*.so"],
     },
     include_package_data=True,
     setup_requires=["cffi>=1.0.0"],
     cffi_modules=["build.py:ffibuilder"],
-    install_requires=["cffi>=1.0.0", "numpy", "chess"],
-    cmdclass={
-        "build_py": CustomBuildPy,
-        "develop": CustomDevelop,
-        "install": CustomInstall,
-    },
+    install_requires=["cffi>=1.0.0", "numpy", "python-chess"],
+    cmdclass=cmdclass,
     python_requires=">=3.6",
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    ],
+    keywords="chess, reinforcement-learning, openmp",
 )

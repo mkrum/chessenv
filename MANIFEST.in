@@ -1,0 +1,22 @@
+include lib/*.so
+include lib/*.dylib
+include chessenv/lib/*.so
+include chessenv/lib/*.dylib
+include lib/*_arm64.so
+include lib/*_x86_64.so
+include lib/*_aarch64.so
+include chessenv/lib/*_arm64.so
+include chessenv/lib/*_x86_64.so
+include chessenv/lib/*_aarch64.so
+include chessenv/lib/*_arm64.dylib
+include chessenv/lib/*_x86_64.dylib
+include build_lib.sh
+include build.py
+include copy_libs.py
+include src/*.c
+include src/*.h
+include MisterQueen/src/*.h
+include MisterQueen/src/*.c
+include MisterQueen/src/deps/tinycthread/*.h
+include MisterQueen/src/deps/tinycthread/*.c
+recursive-include MisterQueen/src/ *

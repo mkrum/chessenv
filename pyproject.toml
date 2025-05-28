@@ -1,20 +1,42 @@
 [build-system]
 requires = ["setuptools>=42", "wheel", "cffi>=1.0.0"]
 build-backend = "setuptools.build_meta"
+build-targets = {sdist = {}}
 
 [project]
-name = "chessenv"
+name = "fastchessenv"
 version = "0.1.0"
 description = "Chess environment for reinforcement learning"
 readme = "README.md"
 requires-python = ">=3.6"
-license = {text = "MIT"}
+license = "MIT"
+authors = [
+    {name = "Your Name"}
+]
 dependencies = [
     "cffi>=1.0.0",
-    "open-spiel>=1.1.0",
-    "pytest>=7.0.1",
+    "numpy",
     "python-chess",
+]
+optional-dependencies.dev = ["pytest>=7.0.1", "open-spiel>=1.1.0"]
+keywords = ["chess", "reinforcement-learning", "openmp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [tool.setuptools]
-packages = ["chessenv"]
+packages = ["fastchessenv", "fastchessenv.lib"]
+package-data = {"chessenv" = ["lib/*.so"]}
+include-package-data = true
+
+[project.urls]
+Homepage = "https://github.com/yourusername/chessenv"
+BugTracker = "https://github.com/yourusername/chessenv/issues"

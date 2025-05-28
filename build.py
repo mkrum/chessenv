@@ -82,26 +82,45 @@ lib_dir = os.path.join(current_dir, "lib")
 extra_compile_args = []
 extra_link_args = []
 
-# We don't need rpath flags since we'll be using dynamic loading
-# This makes the package more portable
+# Get platform and architecture information
+system = platform.system()
+machine = platform.machine()
 
-# Add architecture flag for macOS arm64
-if platform.system() == "Darwin" and platform.machine() == "arm64":
-    extra_compile_args.append("-arch")
-    extra_compile_args.append("arm64")
-    extra_link_args.append("-arch")
-    extra_link_args.append("arm64")
+# Platform specific flags
+if system == "Darwin":
+    # macOS specific settings
+    if machine == "arm64":
+        # Apple Silicon (M1/M2)
+        extra_compile_args.extend(["-arch", "arm64"])
+        extra_link_args.extend(["-arch", "arm64"])
+    else:
+        # Intel Mac
+        extra_compile_args.extend(["-arch", "x86_64"])
+        extra_link_args.extend(["-arch", "x86_64"])
 
-# Add OpenMP flags for all platforms
-# On macOS, we need to ensure libomp is installed (e.g., via 'brew install libomp')
-# But for now, let's disable OpenMP on macOS to ensure compilation works
-if platform.system() == "Darwin":
-    # For now, skip OpenMP on macOS since it requires additional setup
-    pass
-else:
-    # For other platforms, use standard OpenMP flags
+    # OpenMP is tricky on macOS
+    # Assume users have installed libomp via brew
+    # extra_compile_args.append("-Xpreprocessor -fopenmp")
+    # extra_link_args.append("-lomp")
+    pass  # For now, skip OpenMP on macOS
+
+elif system == "Linux":
+    # Linux specific settings
+    if machine == "x86_64":
+        # Intel/AMD 64-bit
+        extra_compile_args.append("-m64")
+    elif machine == "aarch64" or machine == "arm64":
+        # ARM 64-bit
+        pass  # Default flags are fine
+
+    # Add OpenMP flags for Linux
     extra_compile_args.append("-fopenmp")
     extra_link_args.append("-fopenmp")
+
+elif system == "Windows":
+    # Windows specific settings will need MSVC flags
+    # This is just a placeholder, Windows build would need more setup
+    pass
 
 ffibuilder.set_source(
     "chessenv_c",
@@ -117,7 +136,13 @@ ffibuilder.set_source(
         "src/rep.c",
         "src/move_map.c",
     ],
-    include_dirs=["MisterQueen/src/", "MisterQueen/src/deps/tinycthread/", "src/"],
+    include_dirs=[
+        "MisterQueen/src/",
+        "MisterQueen/src/deps/tinycthread/",
+        "src/",
+        os.path.join(current_dir, "MisterQueen", "src"),
+        os.path.join(current_dir, "MisterQueen", "src", "deps", "tinycthread"),
+    ],
     library_dirs=[lib_dir],
     extra_compile_args=extra_compile_args,
     extra_link_args=extra_link_args,

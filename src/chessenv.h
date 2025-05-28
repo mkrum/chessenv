@@ -1,7 +1,7 @@
 #ifndef CHESSENV_H
 #define CHESSENV_H
 
-#include "board.h"
+#include "../MisterQueen/src/board.h"
 
 struct Env {
     Board boards[1024];

@@ -13,7 +13,7 @@ def copy_libs():
     # Directory paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
     src_lib_dir = os.path.join(script_dir, "lib")
-    dst_lib_dir = os.path.join(script_dir, "chessenv", "lib")
+    dst_lib_dir = os.path.join(script_dir, "fastchessenv", "lib")
 
     # Create destination directory if it doesn't exist
     os.makedirs(dst_lib_dir, exist_ok=True)

@@ -1,0 +1,16 @@
+FROM quay.io/pypa/manylinux2014_x86_64
+
+# Install build dependencies
+RUN yum install -y gcc gcc-c++ make
+
+# Install Python dependencies
+RUN pip install --upgrade pip wheel setuptools build cffi
+
+# Set the working directory
+WORKDIR /io
+
+# Copy the source code
+COPY . /io/
+
+# Build the wheel
+CMD ["bash", "-c", "pip install -U pip build wheel && python -m build --wheel"]
