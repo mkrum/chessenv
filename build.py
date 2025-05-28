@@ -51,6 +51,7 @@ void move_str_to_array(int* move_arr, char *move_str);
 void array_to_move_str(char* move_str, int* move_arr);
 
 void array_to_possible(int * move_arr, int *board_arr);
+void parallel_array_to_possible(int *move_arr, int *board_arrs, int n);
 void fen_to_possible(int *move_arr, char *fen);
 
 void move_arr_to_int(int *move_int, int*move_arr);
@@ -91,8 +92,14 @@ if platform.system() == "Darwin" and platform.machine() == "arm64":
     extra_link_args.append("-arch")
     extra_link_args.append("arm64")
 
-# Only add OpenMP flags if not on macOS (clang doesn't support -fopenmp by default)
-if platform.system() != "Darwin":
+# Add OpenMP flags for all platforms
+# On macOS, we need to ensure libomp is installed (e.g., via 'brew install libomp')
+# But for now, let's disable OpenMP on macOS to ensure compilation works
+if platform.system() == "Darwin":
+    # For now, skip OpenMP on macOS since it requires additional setup
+    pass
+else:
+    # For other platforms, use standard OpenMP flags
     extra_compile_args.append("-fopenmp")
     extra_link_args.append("-fopenmp")
 

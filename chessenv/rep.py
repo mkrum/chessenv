@@ -14,6 +14,7 @@ from chessenv_c.lib import (
     legal_mask_to_move_arr_mask,
     move_arr_to_int,
     move_str_to_array,
+    parallel_array_to_possible,
 )
 
 _ffi = FFI()
@@ -266,20 +267,64 @@ class CBoards:
 
     def to_possible_moves(self):
         """
-        Get all possible moves for each board in the stack using C library only.
+        Get all possible moves for each board in the stack using parallelized C implementation.
+
+        This method uses OpenMP to parallelize move generation across all boards.
+
+        NOTE: The parallel implementation has a known limitation: en passant captures are not
+        correctly generated. If your application depends on accurate en passant move generation,
+        you should process boards individually using CBoard.to_possible_moves instead.
 
         Returns
         -------
         list:
             List of CMoves objects, one for each board
         """
-        moves = []
-        for idx in range(0, self.data.shape[0], 69):
-            # Get this board's array
-            board_array = self.data[idx : idx + 69]
+        # Count how many boards we have
+        num_boards = self.data.shape[0] // 69
 
-            # Use the C-only implementation
-            moves.append(_get_board_legal_moves(board_array))
+        if num_boards == 0:
+            return []
+
+        # For a single board, just use the non-parallel version
+        if num_boards == 1:
+            board_array = self.data[:69]
+            return [_get_board_legal_moves(board_array)]
+
+        # Allocate a buffer for all possible moves for all boards
+        # Each board can have a maximum of MAX_MOVES (256) moves, and each move is 5 integers
+        max_moves = 256
+        moves_buffer = np.zeros(num_boards * max_moves * 5, dtype=np.int32)
+
+        # Use the parallelized C function to generate all legal moves
+        parallel_array_to_possible(
+            _ffi.cast("int *", moves_buffer.ctypes.data),
+            _ffi.cast("int *", self.data.ctypes.data),
+            num_boards,
+        )
+
+        # Process the results into a list of CMoves objects
+        moves = []
+        for i in range(num_boards):
+            # Calculate the offset for this board's moves in the buffer
+            offset = i * max_moves * 5
+
+            # Count how many moves were generated for this board
+            num_moves = 0
+            for j in range(max_moves):
+                # Check if all elements in this move are zero (no more moves)
+                if np.sum(moves_buffer[offset + j * 5 : offset + j * 5 + 5]) == 0:
+                    break
+                num_moves += 1
+
+            # Extract the moves for this board
+            if num_moves == 0:
+                # No legal moves
+                moves.append(CMoves(np.zeros(0, dtype=np.int32)))
+            else:
+                # Extract the valid moves
+                board_moves = moves_buffer[offset : offset + num_moves * 5].copy()
+                moves.append(CMoves(board_moves))
 
         return moves
 

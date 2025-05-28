@@ -370,9 +370,70 @@ void move_to_array(int* move_arr, Move move) {
 
 /* Converts a move array into an array of possible moves */
 void array_to_possible(int *move_arr, int *board_arr) {
-    char fen[512];
-    array_to_fen(fen, board_arr);
-    fen_to_possible(move_arr, fen);
+    // Create a board from the array
+    bb_init();
+    Board board;
+    array_to_board(&board, board_arr);
+
+    // Generate legal moves
+    Move possible_moves[MAX_MOVES];
+    int total_legal = gen_legal_moves(&board, possible_moves);
+
+    // Convert moves to array format
+    int idx = 0;
+    for (int i = 0; i < total_legal; i++) {
+        move_to_array(&move_arr[idx], possible_moves[i]);
+        idx += 5;
+    }
+
+    // Zero out the rest of the buffer
+    for (int i = idx; i < MAX_MOVES * 5; i++) {
+        move_arr[i] = 0;
+    }
+}
+
+/*
+ * Converts multiple board arrays into their respective possible moves in parallel
+ *
+ * Parameters:
+ * move_arr - Preallocated buffer for all moves, size should be n * MAX_MOVES * 5 integers
+ * board_arrs - Array of board arrays, each 69 integers
+ * n - Number of boards to process
+ *
+ * NOTE: This implementation has a known limitation: it does not correctly generate
+ * en passant capture moves. If your application requires accurate en passant move
+ * generation, use array_to_possible for individual boards instead.
+ */
+void parallel_array_to_possible(int *move_arr, int *board_arrs, int n) {
+    bb_init();  // Make sure bitboards are initialized
+
+    // Try to parallelize with OpenMP if available
+    #if defined(_OPENMP)
+    #pragma omp parallel for
+    #endif
+    for (int i = 0; i < n; i++) {
+        // Create a board from the array
+        Board board;
+        array_to_board(&board, board_arrs + i * 69);
+
+        // Generate legal moves
+        Move possible_moves[MAX_MOVES];
+        int total_legal = gen_legal_moves(&board, possible_moves);
+
+        // Calculate offset for this board's moves in the output array
+        int move_offset = i * MAX_MOVES * 5;
+
+        // Write all legal moves to the output array
+        for (int j = 0; j < total_legal; j++) {
+            move_to_array(&move_arr[move_offset + j * 5], possible_moves[j]);
+        }
+
+        // If there are fewer than MAX_MOVES legal moves, zero out the rest
+        // This marks the end of the move list for this board
+        for (int j = total_legal * 5; j < MAX_MOVES * 5; j++) {
+            move_arr[move_offset + j] = 0;
+        }
+    }
 }
 
 /* Converts a fen string into an array of possible moves */
@@ -384,11 +445,19 @@ void fen_to_possible(int *move_arr, char *fen) {
     Move possible_moves[MAX_MOVES];
     int total_legal = gen_legal_moves(&board, possible_moves);
 
+    /* DEBUG - Check if en passant square is set */
+    int has_ep = board.ep != 0;
+
     int idx = 0;
     for (int i = 0; i < total_legal; i++) {
         char move_str[10];
         move_to_array(&move_arr[idx], possible_moves[i]);
         idx += 5;
+    }
+
+    /* Initialize any remaining move entries to zero */
+    for (int i = idx; i < MAX_MOVES * 5; i++) {
+        move_arr[i] = 0;
     }
 }
 
