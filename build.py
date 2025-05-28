@@ -123,7 +123,7 @@ elif system == "Windows":
     pass
 
 ffibuilder.set_source(
-    "chessenv_c",
+    "fastchessenv_c",
     """
     #include "chessenv.h"
     #include "sfarray.h"

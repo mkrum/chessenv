@@ -12,5 +12,9 @@ WORKDIR /io
 # Copy the source code
 COPY . /io/
 
+# Build the libraries first
+RUN mkdir -p /io/lib
+RUN cd /io && bash build_lib.sh
+
 # Build the wheel
-CMD ["bash", "-c", "pip install -U pip build wheel && python -m build --wheel"]
+CMD ["bash", "-c", "pip install -U pip build wheel cffi && cd /io && python -m build --wheel"]
