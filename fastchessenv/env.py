@@ -1,9 +1,9 @@
 import numpy as np
 from cffi import FFI
 
-import chessenv_c
-from chessenv.rep import CMoves
-from chessenv_c.lib import (
+import fastchessenv_c
+from fastchessenv.rep import CMoves
+from fastchessenv_c.lib import (
     clean_sfarray,
     create_sfarray,
     generate_random_move,
@@ -57,7 +57,7 @@ class CChessEnv:
         self.n = n
         self.max_step = max_step
         self.draw_reward = draw_reward
-        self._env = chessenv_c.ffi.new("Env *")
+        self._env = fastchessenv_c.ffi.new("Env *")
         self.min_random = min_random
         self.max_random = max_random
         self.invert = invert
@@ -265,7 +265,7 @@ class SFCChessEnv(CChessEnv):
             max_random=max_random,
             invert=invert,
         )
-        self._sfa = chessenv_c.ffi.new("SFArray *")
+        self._sfa = fastchessenv_c.ffi.new("SFArray *")
         # We need enough Stockfish instances to handle n environments
         # The third parameter is the number of threads/stockfish instances to use
         create_sfarray(self._sfa, depth, n)
