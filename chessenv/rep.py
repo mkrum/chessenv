@@ -4,7 +4,7 @@ import chess
 import numpy as np
 from cffi import FFI
 
-from chessenv_c.lib import (
+from fastchessenv_c.lib import (
     array_to_fen,
     array_to_move_str,
     array_to_possible,
