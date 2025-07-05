@@ -1,8 +1,8 @@
 import numpy as np
 from cffi import FFI
 
-import chessenv_c
-from chessenv_c.lib import (
+import fastchessenv_c
+from fastchessenv_c.lib import (
     board_arr_to_move_int,
     board_arr_to_moves,
     clean_sfarray,
@@ -16,7 +16,7 @@ class SFArray:
 
     def __init__(self, depth, n_threads=0):
         self.depth = depth
-        self._sfa = chessenv_c.ffi.new("SFArray *")
+        self._sfa = fastchessenv_c.ffi.new("SFArray *")
         # The third parameter specifies how many Stockfish instances to create
         # If n_threads is 0, it will use a reasonable default based on CPU cores
         create_sfarray(self._sfa, self.depth, n_threads)
