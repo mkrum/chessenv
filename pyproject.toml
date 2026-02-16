@@ -55,3 +55,18 @@ python_version = "3.9"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+markers = [
+    "rules: chess rule correctness tests",
+    "representation: encoding/decoding round-trip tests",
+    "env_api: environment API contract tests",
+    "legal_moves: comprehensive move validation tests",
+    "fuzz: random game validation tests",
+    "stockfish: tests requiring Stockfish binary",
+    "slow: long-running tests",
+    "known_bug: tests documenting known bugs (expected to fail)",
+    "en_passant: en passant related tests",
+    "castling: castling related tests",
+    "promotion: pawn promotion related tests",
+    "checkmate: checkmate related tests",
+    "stalemate: stalemate related tests",
+]
