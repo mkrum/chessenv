@@ -5,8 +5,8 @@ Test direct manipulation of en passant position
 import chess
 import numpy as np
 
-from chessenv.rep import CBoard, _ffi
-from chessenv_c.lib import array_to_possible, fen_to_possible
+from fastchessenv.rep import CBoard, _ffi
+from fastchessenv_c.lib import array_to_possible, fen_to_possible
 
 
 def test_array_to_possible_directly():

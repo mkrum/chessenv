@@ -6,7 +6,7 @@ import random
 
 import chess
 
-from chessenv.rep import CBoard, CBoards
+from fastchessenv.rep import CBoard, CBoards
 
 # Read test data
 with open("test/test_data.csv", "r") as test_data:

@@ -7,8 +7,8 @@ import random
 import chess
 import pytest
 
-from chessenv.env import CChessEnv
-from chessenv.rep import CBoard, CBoards
+from fastchessenv.env import CChessEnv
+from fastchessenv.rep import CBoard, CBoards
 
 # Load some test positions
 with open("test/test_data.csv", "r") as test_data:

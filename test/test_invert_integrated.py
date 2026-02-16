@@ -1,9 +1,9 @@
 import numpy as np
 from cffi import FFI
 
-from chessenv import CChessEnv
-from chessenv.rep import CBoard, CMove
-from chessenv_c.lib import invert_array
+from fastchessenv import CChessEnv
+from fastchessenv.rep import CBoard, CMove
+from fastchessenv_c.lib import invert_array
 
 _ffi = FFI()
 

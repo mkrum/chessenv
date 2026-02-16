@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from cffi import FFI
 
@@ -15,6 +17,8 @@ from fastchessenv_c.lib import (
     reset_env,
     step_env,
 )
+
+_ffi = FFI()
 
 
 class CChessEnv:
@@ -51,9 +55,14 @@ class CChessEnv:
     """
 
     def __init__(
-        self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False
-    ):
-        self.ffi = FFI()
+        self,
+        n: int,
+        max_step: int = 100,
+        draw_reward: float = 0,
+        min_random: int = 0,
+        max_random: int = 0,
+        invert: bool = False,
+    ) -> None:
         self.n = n
         self.max_step = max_step
         self.draw_reward = draw_reward
@@ -64,7 +73,7 @@ class CChessEnv:
 
         self.t = np.zeros(self.n)
 
-    def reset(self):
+    def reset(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Resets the environment, returns the new intial states.
 
@@ -80,7 +89,9 @@ class CChessEnv:
         mask = self.get_mask()
         return self.get_state(), mask
 
-    def step(self, move_arr):
+    def step(
+        self, move_arr: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Steps the environment foward one timestep.
 
@@ -113,10 +124,10 @@ class CChessEnv:
 
         return state, mask, reward, total_done
 
-    def invert_boards(self):
+    def invert_boards(self) -> None:
         invert_env(self._env, self.n)
 
-    def push_moves(self, move_arr):
+    def push_moves(self, move_arr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Applies a move_arr to the environment, and resets. Implements a lower
         level version of step to be used for mutliagent training.
@@ -140,51 +151,43 @@ class CChessEnv:
 
         step_env(
             self._env,
-            self.ffi.cast("int *", move_arr.ctypes.data),
-            self.ffi.cast("int *", done.ctypes.data),
-            self.ffi.cast("int *", reward.ctypes.data),
+            _ffi.cast("int *", move_arr.ctypes.data),
+            _ffi.cast("int *", done.ctypes.data),
+            _ffi.cast("int *", reward.ctypes.data),
         )
 
         if self.invert:
             self.invert_boards()
 
-        if self.invert:
-            reset_and_randomize_boards_invert(
-                self._env,
-                self.ffi.cast("int *", done.ctypes.data),
-                self.min_random,
-                self.max_random,
-            )
-        else:
-            reset_and_randomize_boards_invert(
-                self._env,
-                self.ffi.cast("int *", done.ctypes.data),
-                self.min_random,
-                self.max_random,
-            )
+        reset_and_randomize_boards_invert(
+            self._env,
+            _ffi.cast("int *", done.ctypes.data),
+            self.min_random,
+            self.max_random,
+        )
         return done, reward
 
-    def reset_boards(self, done):
+    def reset_boards(self, done: np.ndarray) -> None:
         done = np.int32(done)
         reset_and_randomize_boards_invert(
             self._env,
-            self.ffi.cast("int *", done.ctypes.data),
+            _ffi.cast("int *", done.ctypes.data),
             self.min_random,
             self.max_random,
         )
         self.t[(done == 1)] = 0
 
-    def get_state(self):
+    def get_state(self) -> np.ndarray:
         board_arr = self._make_board_arr()
-        get_boards(self._env, self.ffi.cast("int *", board_arr.ctypes.data))
+        get_boards(self._env, _ffi.cast("int *", board_arr.ctypes.data))
         return board_arr.reshape(self.n, 69)
 
-    def get_mask(self):
+    def get_mask(self) -> np.ndarray:
         mask_arr = self._make_mask_arr()
-        get_mask(self._env, self.ffi.cast("int *", mask_arr.ctypes.data))
+        get_mask(self._env, _ffi.cast("int *", mask_arr.ctypes.data))
         return mask_arr.reshape(self.n, 88 * 64)
 
-    def get_possible_moves(self):
+    def get_possible_moves(self) -> list[CMoves]:
         """
         Get all possible moves for each board in the environment.
 
@@ -197,28 +200,30 @@ class CChessEnv:
         moves = [CMoves.from_int(np.argwhere(mask[i] == 1)) for i in range(self.n)]
         return moves
 
-    def random(self):
+    def random(self) -> np.ndarray:
         move_arr = self._make_move_arr()
-        generate_random_move(self._env, self.ffi.cast("int *", move_arr.ctypes.data))
+        generate_random_move(self._env, _ffi.cast("int *", move_arr.ctypes.data))
         return move_arr
 
-    def sample_opponent(self):
+    def sample_opponent(self) -> np.ndarray:
         return self.random()
 
-    def step_moves(self, moves):
+    def step_moves(
+        self, moves: list[str]
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         move_arr = CMoves.from_str(moves).to_int()
-        return self.step_arr(move_arr)
+        return self.step(move_arr)
 
-    def _make_board_arr(self):
+    def _make_board_arr(self) -> np.ndarray:
         return np.zeros(shape=(self.n * 69), dtype=np.int32)
 
-    def _make_move_arr(self):
+    def _make_move_arr(self) -> np.ndarray:
         return np.zeros(shape=(self.n,), dtype=np.int32)
 
-    def _make_vec_arr(self):
+    def _make_vec_arr(self) -> np.ndarray:
         return np.zeros(shape=(self.n), dtype=np.int32)
 
-    def _make_mask_arr(self):
+    def _make_mask_arr(self) -> np.ndarray:
         return np.zeros(shape=(self.n * 64 * 88), dtype=np.int32)
 
 
@@ -249,14 +254,14 @@ class SFCChessEnv(CChessEnv):
 
     def __init__(
         self,
-        n,
-        depth=1,
-        max_step=100,
-        draw_reward=0,
-        min_random=0,
-        max_random=0,
-        invert=False,
-    ):
+        n: int,
+        depth: int = 1,
+        max_step: int = 100,
+        draw_reward: float = 0,
+        min_random: int = 0,
+        max_random: int = 0,
+        invert: bool = False,
+    ) -> None:
         super().__init__(
             n,
             max_step=max_step,
@@ -271,14 +276,14 @@ class SFCChessEnv(CChessEnv):
         create_sfarray(self._sfa, depth, n)
         self.depth = depth
 
-    def sample_opponent(self):
+    def sample_opponent(self) -> np.ndarray:
         move_arr = self._make_move_arr()
         generate_stockfish_move(
-            self._env, self._sfa, self.ffi.cast("int *", move_arr.ctypes.data)
+            self._env, self._sfa, _ffi.cast("int *", move_arr.ctypes.data)
         )
         return move_arr
 
-    def __del__(self):
+    def __del__(self) -> None:
         clean_sfarray(self._sfa)
 
 
@@ -306,8 +311,14 @@ class RandomChessEnv(CChessEnv):
     """
 
     def __init__(
-        self, n, max_step=100, draw_reward=0, min_random=0, max_random=0, invert=False
-    ):
+        self,
+        n: int,
+        max_step: int = 100,
+        draw_reward: float = 0,
+        min_random: int = 0,
+        max_random: int = 0,
+        invert: bool = False,
+    ) -> None:
         super().__init__(
             n,
             max_step=max_step,
@@ -317,7 +328,7 @@ class RandomChessEnv(CChessEnv):
             invert=invert,
         )
 
-    def sample_opponent(self):
+    def sample_opponent(self) -> np.ndarray:
         """
         Samples random moves for the opponent from the set of legal moves
 

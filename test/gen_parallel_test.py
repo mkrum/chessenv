@@ -7,7 +7,7 @@ import random
 
 import chess
 
-from chessenv.rep import CBoard, CBoards
+from fastchessenv.rep import CBoard, CBoards
 
 
 def check_position(fen):

@@ -1,9 +1,9 @@
 import chess
 import numpy as np
 
-from chessenv import CChessEnv
-from chessenv.env import SFCChessEnv
-from chessenv.rep import CBoard, CBoards, CMove
+from fastchessenv import CChessEnv
+from fastchessenv.env import SFCChessEnv
+from fastchessenv.rep import CBoard, CBoards, CMove
 
 # No monkey patching needed anymore
 

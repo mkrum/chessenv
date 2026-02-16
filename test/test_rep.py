@@ -4,7 +4,7 @@ import chess
 import numpy as np
 import pytest
 
-from chessenv.rep import CBoard, CBoards, CMove, CMoves
+from fastchessenv.rep import CBoard, CBoards, CMove, CMoves
 
 with open("test/test_data.csv", "r") as test_data:
     lines = test_data.readlines()

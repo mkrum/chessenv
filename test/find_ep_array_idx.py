@@ -4,7 +4,7 @@ Find the index of the en passant square in the board array
 
 import chess
 
-from chessenv.rep import CBoard
+from fastchessenv.rep import CBoard
 
 # Test positions with en passant captures
 test_position = "4k3/8/8/8/Pp6/8/8/4K3 b - a3 0 1"

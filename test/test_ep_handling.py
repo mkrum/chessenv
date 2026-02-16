@@ -4,7 +4,7 @@ Test script to specifically debug en passant handling in the parallel and sequen
 
 import chess
 
-from chessenv.rep import CBoard, CBoards, _array_to_fen
+from fastchessenv.rep import CBoard, CBoards, _array_to_fen
 
 
 def array_to_fen_verbose(board_arr):

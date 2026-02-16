@@ -1,8 +1,8 @@
 import chess
 import numpy as np
 
-from chessenv.env import RandomChessEnv
-from chessenv.rep import CBoard, CBoards, CMove
+from fastchessenv.env import RandomChessEnv
+from fastchessenv.rep import CBoard, CBoards, CMove
 
 
 def test_randomchessenv_init():

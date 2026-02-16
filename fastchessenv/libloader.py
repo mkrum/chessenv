@@ -168,8 +168,8 @@ def initialize():
     logger.info(f"Python version: {sys.version}")
     logger.info(f"Architecture: {platform.machine()}")
 
+    # Attempt 1: Load pre-built libraries directly
     try:
-        # Load libraries in the correct order
         load_library("tinycthread")
         load_library("misterqueen")
         return True
@@ -177,96 +177,100 @@ def initialize():
         logger.warning(f"Error initializing libraries: {e}")
         logger.info("Attempting to build libraries locally...")
 
-        try:
-            # Try using the standalone setup script
-            try:
-                from fastchessenv.setup_standalone import setup_libraries
+    # Attempt 2: Build via standalone setup script
+    if _try_standalone_setup():
+        return True
 
-                logger.info("Using standalone setup script to build libraries...")
+    # Attempt 3: Build via build_lib.sh shell script
+    if _try_build_script():
+        return True
 
-                # Create temporary directory for the libraries
-                import tempfile
+    logger.info("Please manually build the required libraries.")
+    return False
 
-                temp_dir = tempfile.mkdtemp(prefix="fastchessenv_libs_")
 
-                # Build the libraries
-                success, lib_dir, error = setup_libraries(temp_dir)
-                if success:
-                    logger.info(f"Libraries built successfully in {lib_dir}")
-                    # Store the lib_dir for future reference
-                    global _temp_lib_dir
-                    _temp_lib_dir = lib_dir
+def _try_standalone_setup() -> bool:
+    """Try building libraries using the standalone setup script."""
+    try:
+        from fastchessenv.setup_standalone import setup_libraries
+    except ImportError as imp_error:
+        logger.warning(f"Standalone setup script not available: {imp_error}")
+        return False
 
-                    # Copy libraries to package directory if possible
-                    module_dir = os.path.dirname(os.path.abspath(__file__))
-                    pkg_lib_dir = os.path.join(module_dir, "lib")
+    import tempfile
 
-                    try:
-                        if os.access(pkg_lib_dir, os.W_OK):
-                            import shutil
+    logger.info("Using standalone setup script to build libraries...")
 
-                            os.makedirs(pkg_lib_dir, exist_ok=True)
-                            for lib_file in os.listdir(lib_dir):
-                                if (
-                                    lib_file.endswith(".so")
-                                    or lib_file.endswith(".dylib")
-                                    or lib_file.endswith(".dll")
-                                ):
-                                    shutil.copy2(
-                                        os.path.join(lib_dir, lib_file), pkg_lib_dir
-                                    )
-                            logger.info(
-                                f"Copied libraries to package directory: {pkg_lib_dir}"
-                            )
-                    except (IOError, OSError) as copy_error:
-                        logger.warning(
-                            f"Could not copy libraries to package directory: {copy_error}"
-                        )
-                        logger.info(
-                            "Will use libraries from temporary directory instead"
-                        )
+    try:
+        temp_dir = tempfile.mkdtemp(prefix="fastchessenv_libs_")
+        success, lib_dir, error = setup_libraries(temp_dir)
+    except OSError as e:
+        logger.error(f"Failed to build libraries: {e}")
+        return False
 
-                    # Try loading the libraries again
-                    load_library("tinycthread")
-                    load_library("misterqueen")
-                    return True
-                else:
-                    logger.error(f"Failed to build libraries: {error}")
-                    return False
-            except ImportError as imp_error:
-                # If setup_standalone.py is not available, fall back to build script
-                logger.warning(f"Standalone setup script not available: {imp_error}")
-                logger.info("Falling back to build script...")
+    if not success:
+        logger.error(f"Failed to build libraries: {error}")
+        return False
 
-                # Try using the build_lib.sh script
-                import subprocess
+    logger.info(f"Libraries built successfully in {lib_dir}")
+    global _temp_lib_dir
+    _temp_lib_dir = lib_dir
 
-                try:
-                    # Get the parent directory of the package
-                    module_dir = os.path.dirname(os.path.abspath(__file__))
-                    parent_dir = os.path.dirname(module_dir)
+    # Copy libraries to package directory if possible
+    _try_copy_libs_to_package(lib_dir)
 
-                    # Build script path
-                    build_script = os.path.join(parent_dir, "build_lib.sh")
+    try:
+        load_library("tinycthread")
+        load_library("misterqueen")
+        return True
+    except ImportError as e:
+        logger.error(f"Failed to load built libraries: {e}")
+        return False
 
-                    if os.path.exists(build_script):
-                        logger.info(f"Running build script: {build_script}")
-                        subprocess.check_call(["bash", build_script])
 
-                        # Try loading the libraries again
-                        load_library("tinycthread")
-                        load_library("misterqueen")
-                        return True
-                    else:
-                        logger.error(f"Build script not found: {build_script}")
-                        return False
-                except subprocess.SubprocessError as subp_error:
-                    logger.error(f"Failed to run build script: {subp_error}")
-                    return False
-        except Exception as build_error:
-            logger.error(f"Failed to build libraries: {build_error}")
-            import traceback
+def _try_copy_libs_to_package(lib_dir: str) -> None:
+    """Try to copy built libraries into the package lib/ directory."""
+    import shutil
 
-            logger.debug(traceback.format_exc())
-            logger.info("Please manually build the required libraries.")
-            return False
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    pkg_lib_dir = os.path.join(module_dir, "lib")
+
+    try:
+        if not os.access(pkg_lib_dir, os.W_OK):
+            return
+        os.makedirs(pkg_lib_dir, exist_ok=True)
+        for lib_file in os.listdir(lib_dir):
+            if lib_file.endswith((".so", ".dylib", ".dll")):
+                shutil.copy2(os.path.join(lib_dir, lib_file), pkg_lib_dir)
+        logger.info(f"Copied libraries to package directory: {pkg_lib_dir}")
+    except (IOError, OSError) as copy_error:
+        logger.warning(f"Could not copy libraries to package directory: {copy_error}")
+        logger.info("Will use libraries from temporary directory instead")
+
+
+def _try_build_script() -> bool:
+    """Try building libraries using the build_lib.sh shell script."""
+    import subprocess
+
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(module_dir)
+    build_script = os.path.join(parent_dir, "build_lib.sh")
+
+    if not os.path.exists(build_script):
+        logger.error(f"Build script not found: {build_script}")
+        return False
+
+    logger.info(f"Running build script: {build_script}")
+    try:
+        subprocess.check_call(["bash", build_script])
+    except subprocess.SubprocessError as subp_error:
+        logger.error(f"Failed to run build script: {subp_error}")
+        return False
+
+    try:
+        load_library("tinycthread")
+        load_library("misterqueen")
+        return True
+    except ImportError as e:
+        logger.error(f"Failed to load libraries after build: {e}")
+        return False

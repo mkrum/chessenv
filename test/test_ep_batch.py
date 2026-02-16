@@ -5,7 +5,7 @@ Test en passant handling across multiple positions simultaneously
 import chess
 import numpy as np
 
-from chessenv.rep import CBoard, CBoards
+from fastchessenv.rep import CBoard, CBoards
 
 # Test positions with en passant captures from our earlier tests
 en_passant_positions = [

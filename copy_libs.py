@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Copy built libraries to the chessenv package directory for distribution.
+Copy built libraries to the fastchessenv package directory for distribution.
 This script ensures the libraries are bundled with the package.
 """
 

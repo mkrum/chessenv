@@ -1,7 +1,7 @@
 import chess
 import numpy as np
 
-from chessenv import CBoards, CChessEnv, CMove, CMoves
+from fastchessenv import CBoards, CChessEnv, CMove, CMoves
 
 
 def test_env():

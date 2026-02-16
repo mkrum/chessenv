@@ -1,6 +1,6 @@
 import numpy as np
 
-from chessenv.rep import CBoard, legal_mask_convert
+from fastchessenv.rep import CBoard, legal_mask_convert
 
 
 def test_get_mask_basic():

@@ -1,8 +1,8 @@
 import numpy as np
 from cffi import FFI
 
-from chessenv.rep import CBoard
-from chessenv_c.lib import invert_array
+from fastchessenv.rep import CBoard
+from fastchessenv_c.lib import invert_array
 
 _ffi = FFI()
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from chessenv.rep import CBoard, CMove
-from chessenv.sfa import SFArray
+from fastchessenv.rep import CBoard, CMove
+from fastchessenv.sfa import SFArray
 
 
 def test_sfarray_init():

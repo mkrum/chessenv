@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import Any
 
 import chess
 import numpy as np
@@ -20,6 +23,19 @@ from fastchessenv_c.lib import (
 _ffi = FFI()
 
 
+def _validate_int_array(arr: Any, label: str) -> np.ndarray:
+    """Validate and convert an array to int32, raising on non-integer values."""
+    arr_np = np.asarray(arr)
+    if np.issubdtype(arr_np.dtype, np.integer):
+        return arr_np
+    if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
+        return arr_np.astype(np.int32)
+    raise ValueError(
+        f"{label} array must contain integer values, received {arr_np.dtype}. "
+        "Values must be convertible to integers without loss of information."
+    )
+
+
 @dataclass(frozen=True)
 class CMove:
     """
@@ -29,7 +45,7 @@ class CMove:
 
     Example
     -------
-    >>> from chessenv.rep import CMove
+    >>> from fastchessenv.rep import CMove
     >>> move = CMove.from_str("e2e4")
     >>> move.to_int()
     2925
@@ -42,46 +58,35 @@ class CMove:
     'e2e4'
     """
 
-    data: np.array
+    data: np.ndarray
 
     @classmethod
-    def from_str(cls, move):
+    def from_str(cls, move: str) -> CMove:
         data = _move_str_to_array(move)
         return cls(data)
 
-    def to_str(self):
+    def to_str(self) -> str:
         return _array_to_move_str(self.data)
 
     @classmethod
-    def from_move(self, move):
-        return self.from_str(str(move))
+    def from_move(cls, move: chess.Move) -> CMove:
+        return cls.from_str(str(move))
 
-    def to_move(self):
+    def to_move(self) -> chess.Move:
         return chess.Move.from_uci(self.to_str())
 
     @classmethod
-    def from_array(cls, arr):
-        # Check if array contains floats - if so, convert to int32 or raise error
-        arr_np = np.asarray(arr)
-        if not np.issubdtype(arr_np.dtype, np.integer):
-            # If all values are effectively integers (no decimal part), convert them
-            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
-                arr_np = arr_np.astype(np.int32)
-            else:
-                raise ValueError(
-                    f"Moves array must contain integer values, received {arr_np.dtype}. "
-                    "Values must be convertible to integers without loss of information."
-                )
-        return cls(arr_np)
+    def from_array(cls, arr: Any) -> CMove:
+        return cls(_validate_int_array(arr, "Moves"))
 
-    def to_array(self):
+    def to_array(self) -> np.ndarray:
         return self.data
 
     @classmethod
-    def from_int(cls, move_int):
+    def from_int(cls, move_int: int) -> CMove:
         return cls(_int_to_move_arr(move_int))
 
-    def to_int(self):
+    def to_int(self) -> int:
         return _move_arr_to_int(self.data)
 
 
@@ -95,7 +100,7 @@ class CBoard:
 
     Example
     -------
-    >>> from chessenv.rep import CBoard
+    >>> from fastchessenv.rep import CBoard
     >>> import chess
     >>> board = chess.Board()
     >>> board
@@ -113,43 +118,32 @@ class CBoard:
     Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     """
 
-    data: np.array
+    data: np.ndarray
 
     @classmethod
-    def from_array(cls, arr):
-        # Check if array contains floats - if so, convert to int32 or raise error
-        arr_np = np.asarray(arr)
-        if not np.issubdtype(arr_np.dtype, np.integer):
-            # If all values are effectively integers (no decimal part), convert them
-            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
-                arr_np = arr_np.astype(np.int32)
-            else:
-                raise ValueError(
-                    f"Board array must contain integer values, received {arr_np.dtype}. "
-                    "Values must be convertible to integers without loss of information."
-                )
-        return cls(arr_np)
+    def from_array(cls, arr: Any) -> CBoard:
+        return cls(_validate_int_array(arr, "Board"))
 
-    def to_fen(self):
+    def to_fen(self) -> str:
         return _array_to_fen(self.data)
 
     @classmethod
-    def from_fen(cls, fen_str):
+    def from_fen(cls, fen_str: str) -> CBoard:
         fen_str = fen_str.replace("-", "")
         return cls(_fen_to_array(fen_str))
 
-    def to_array(self):
+    def to_array(self) -> np.ndarray:
         return self.data
 
     @classmethod
-    def from_board(cls, board):
+    def from_board(cls, board: chess.Board) -> CBoard:
         return cls.from_fen(board.fen())
 
-    def to_board(self):
+    def to_board(self) -> chess.Board:
         fen = self.to_fen()
         return chess.Board(fen)
 
-    def to_possible_moves(self):
+    def to_possible_moves(self) -> CMoves:
         """
         Get all possible moves for the board using C library only.
 
@@ -160,15 +154,15 @@ class CBoard:
         """
         return _get_board_legal_moves(self.data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         board = self.to_board()
         return str(board)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         board = self.to_board()
         return repr(board)
 
-    def get_mask(self):
+    def get_mask(self) -> np.ndarray:
         return _board_arr_to_mask(self.data)
 
 
@@ -182,33 +176,33 @@ class CMoves:
     return all of the moves within a single array. See CMove.
     """
 
-    data: np.array
+    data: np.ndarray
 
     @classmethod
-    def from_int(cls, move_ints):
+    def from_int(cls, move_ints: np.ndarray) -> CMoves:
         # Handle empty move_ints array (no legal moves)
         if len(move_ints) == 0:
             return cls(np.zeros((0,), dtype=np.int32))
         return cls(np.concatenate([CMove.from_int(m).to_array() for m in move_ints]))
 
-    def to_int(self):
+    def to_int(self) -> np.ndarray:
         cmoves = []
         for i in range(0, self.data.shape[0], 5):
             cmoves.append(CMove(self.data[i : i + 5]).to_int())
         return np.array(cmoves)
 
-    def to_cmoves(self):
+    def to_cmoves(self) -> list[CMove]:
         cmoves = []
         for i in range(0, self.data.shape[0], 5):
             cmoves.append(CMove(self.data[i : i + 5]))
         return cmoves
 
     @classmethod
-    def from_cmoves(cls, cmoves):
+    def from_cmoves(cls, cmoves: list[CMove]) -> CMoves:
         return cls(np.concatenate([c.data for c in cmoves]))
 
     @classmethod
-    def from_str(cls, move_list):
+    def from_str(cls, move_list: list[str]) -> CMoves:
 
         data = np.zeros(5 * len(move_list), dtype=np.int32)
         for i, move in enumerate(move_list):
@@ -216,8 +210,8 @@ class CMoves:
 
         return cls(data)
 
-    def to_str(self):
-        moves = []
+    def to_str(self) -> list[str]:
+        moves: list[str] = []
         # Handle empty data array (no moves)
         if self.data.size == 0:
             return moves
@@ -226,30 +220,19 @@ class CMoves:
             moves.append(_array_to_move_str(self.data[idx : idx + 5]))
         return moves
 
-    def to_move(self):
+    def to_move(self) -> list[chess.Move]:
         return [chess.Move.from_uci(m) for m in self.to_str()]
 
     @classmethod
-    def from_move(self, moves):
+    def from_move(cls, moves: list[chess.Move]) -> CMoves:
         str_list = [str(m) for m in moves]
-        return self.from_str(str_list)
+        return cls.from_str(str_list)
 
     @classmethod
-    def from_array(cls, arr):
-        # Check if array contains floats - if so, convert to int32 or raise error
-        arr_np = np.asarray(arr)
-        if not np.issubdtype(arr_np.dtype, np.integer):
-            # If all values are effectively integers (no decimal part), convert them
-            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
-                arr_np = arr_np.astype(np.int32)
-            else:
-                raise ValueError(
-                    f"Moves array must contain integer values, received {arr_np.dtype}. "
-                    "Values must be convertible to integers without loss of information."
-                )
-        return cls(arr_np)
+    def from_array(cls, arr: Any) -> CMoves:
+        return cls(_validate_int_array(arr, "Moves"))
 
-    def to_array(self):
+    def to_array(self) -> np.ndarray:
         return self.data
 
 
@@ -263,9 +246,9 @@ class CBoards:
     return all of the boards within a single array. See CBoard.
     """
 
-    data: np.array
+    data: np.ndarray
 
-    def to_possible_moves(self):
+    def to_possible_moves(self) -> list[CMoves]:
         """
         Get all possible moves for each board in the stack using parallelized C implementation.
 
@@ -329,28 +312,17 @@ class CBoards:
         return moves
 
     @classmethod
-    def from_array(cls, arr):
-        # Check if array contains floats - if so, convert to int32 or raise error
-        arr_np = np.asarray(arr)
-        if not np.issubdtype(arr_np.dtype, np.integer):
-            # If all values are effectively integers (no decimal part), convert them
-            if np.all(np.equal(arr_np, arr_np.astype(np.int32))):
-                arr_np = arr_np.astype(np.int32)
-            else:
-                raise ValueError(
-                    f"Boards array must contain integer values, received {arr_np.dtype}. "
-                    "Values must be convertible to integers without loss of information."
-                )
-        return cls(arr_np)
+    def from_array(cls, arr: Any) -> CBoards:
+        return cls(_validate_int_array(arr, "Boards"))
 
-    def to_fen(self):
+    def to_fen(self) -> list[str]:
         fens = []
         for idx in range(0, self.data.shape[0], 69):
             fens.append(_array_to_fen(self.data[idx : idx + 69]))
         return fens
 
     @classmethod
-    def from_fen(cls, fen_str_list):
+    def from_fen(cls, fen_str_list: list[str]) -> CBoards:
 
         data = np.zeros(69 * len(fen_str_list), dtype=np.int32)
         for i, idx in enumerate(range(0, data.shape[0], 69)):
@@ -358,15 +330,15 @@ class CBoards:
 
         return cls(data)
 
-    def to_array(self):
+    def to_array(self) -> np.ndarray:
         return self.data
 
     @classmethod
-    def from_board(cls, boards):
+    def from_board(cls, boards: list[chess.Board]) -> CBoards:
         fens = [b.fen() for b in boards]
         return cls.from_fen(fens)
 
-    def to_board(self):
+    def to_board(self) -> list[chess.Board]:
         fens = self.to_fen()
         return [chess.Board(f) for f in fens]
 
@@ -378,18 +350,18 @@ arrays for simplicity. See src/ and build.py
 """
 
 
-def _fen_to_array(fen_str):
+def _fen_to_array(fen_str: str) -> np.ndarray:
     """Converts a fen to a board array"""
     board_arr = np.zeros(shape=(69), dtype=np.int32)
-    x = _ffi.new(f"char[{len(fen_str) + 10}]", bytes(fen_str, encoding="utf-8"))
+    x = _ffi.new(f"char[{len(fen_str) + 10}]", fen_str.encode())
     fen_to_array(_ffi.cast("int *", board_arr.ctypes.data), _ffi.cast("char *", x))
     _ffi.release(x)
     return board_arr
 
 
-def _array_to_fen(board_arr):
+def _array_to_fen(board_arr: np.ndarray) -> str:
     """Converts a board array to fen"""
-    x = _ffi.new("char[512]", bytes("\0" * 512, encoding="utf-8"))
+    x = _ffi.new("char[512]", ("\0" * 512).encode())
     array_to_fen(_ffi.cast("char *", x), _ffi.cast("int *", board_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
     _ffi.release(x)
@@ -405,18 +377,18 @@ def _array_to_fen(board_arr):
     return f"{pieces} {to_move} {castling} {ep}"
 
 
-def _move_str_to_array(move_str):
+def _move_str_to_array(move_str: str) -> np.ndarray:
     """Converts string representation of a move ("e2e4") to an array"""
     move_arr = np.zeros(shape=(5), dtype=np.int32)
-    x = _ffi.new("char[10]", bytes(move_str, encoding="utf-8"))
+    x = _ffi.new("char[10]", move_str.encode())
     move_str_to_array(_ffi.cast("int *", move_arr.ctypes.data), _ffi.cast("char *", x))
     _ffi.release(x)
     return move_arr
 
 
-def _array_to_move_str(move_arr):
+def _array_to_move_str(move_arr: np.ndarray) -> str:
     """Converts move array to a string representation of a move ("e2e4")"""
-    x = _ffi.new("char[10]", bytes("\0" * 10, encoding="utf-8"))
+    x = _ffi.new("char[10]", ("\0" * 10).encode())
     array_to_move_str(x, _ffi.cast("int *", move_arr.ctypes.data))
     x_str = _ffi.string(x).decode("utf-8")
 
@@ -428,7 +400,7 @@ def _array_to_move_str(move_arr):
     return x_str
 
 
-def _get_board_legal_moves(board_array):
+def _get_board_legal_moves(board_array: np.ndarray) -> CMoves:
     """
     Get legal moves for a board array using C library.
 
@@ -479,7 +451,7 @@ def _get_board_legal_moves(board_array):
     return CMoves(valid_moves)
 
 
-def _move_arr_to_int(move_arr):
+def _move_arr_to_int(move_arr: np.ndarray) -> int:
     """Converts a move array to a move id"""
     move_int = np.zeros(shape=(1,), dtype=np.int32)
     move_arr_to_int(
@@ -489,18 +461,18 @@ def _move_arr_to_int(move_arr):
     return move_int[0]
 
 
-def _int_to_move_arr(move_int):
+def _int_to_move_arr(move_int: int) -> np.ndarray:
     """Converts a move id to a move array"""
-    move_int = np.array([move_int])
+    move_int_arr = np.array([move_int])
     move_arr = np.zeros(shape=(5,), dtype=np.int32)
     int_to_move_arr(
         _ffi.cast("int*", move_arr.ctypes.data),
-        _ffi.cast("int *", move_int.ctypes.data),
+        _ffi.cast("int *", move_int_arr.ctypes.data),
     )
     return move_arr
 
 
-def legal_mask_convert(legal_mask):
+def legal_mask_convert(legal_mask: np.ndarray) -> dict[int, np.ndarray]:
     """Converts the id version of the move mask into an array based version"""
     n = legal_mask.shape[0]
     legal_mask = legal_mask.flatten()
@@ -525,7 +497,7 @@ def legal_mask_convert(legal_mask):
     return move_map
 
 
-def _board_arr_to_mask(board_arr):
+def _board_arr_to_mask(board_arr: np.ndarray) -> np.ndarray:
     """
     Converts a board array to a move mask.
 
