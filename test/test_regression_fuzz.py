@@ -113,8 +113,8 @@ def test_mask_move_is_executable():
         if done[0]:
             state, mask = env.reset()
         else:
-            _ = env.get_state()
-            _ = env.get_mask()
+            state = env.get_state()
+            mask = env.get_mask()
 
             # Resulting state should have at least one legal move (unless checkmate/stalemate)
             # and be a valid board shape
@@ -170,5 +170,4 @@ def test_extensive_random_games_legal_moves():
             if games_completed >= 1000:
                 break
         else:
-            _ = env.get_state()
-            _ = env.get_mask()
+            state = env.get_state()

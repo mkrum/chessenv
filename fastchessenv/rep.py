@@ -129,7 +129,6 @@ class CBoard:
 
     @classmethod
     def from_fen(cls, fen_str: str) -> CBoard:
-        fen_str = fen_str.replace("-", "")
         return cls(_fen_to_array(fen_str))
 
     def to_array(self) -> np.ndarray:
@@ -253,10 +252,6 @@ class CBoards:
         Get all possible moves for each board in the stack using parallelized C implementation.
 
         This method uses OpenMP to parallelize move generation across all boards.
-
-        NOTE: The parallel implementation has a known limitation: en passant captures are not
-        correctly generated. If your application depends on accurate en passant move generation,
-        you should process boards individually using CBoard.to_possible_moves instead.
 
         Returns
         -------

@@ -67,12 +67,9 @@ def test_mask_bijection(fen):
 
 
 @pytest.mark.legal_moves
-def test_cboards_parallel_vs_sequential_no_ep():
-    """50 non-EP positions: parallel CBoards matches sequential CBoard."""
-    # Filter out positions with en passant
-    no_ep_fens = [f for f in _fens if " - " in f][:50]
-
-    for fen in no_ep_fens:
+def test_cboards_parallel_vs_sequential():
+    """50 positions (including EP): parallel CBoards matches sequential CBoard."""
+    for fen in _fens[:50]:
         # Sequential (single board)
         cboard = CBoard.from_fen(fen)
         expected = set(cboard.to_possible_moves().to_str())
@@ -83,27 +80,6 @@ def test_cboards_parallel_vs_sequential_no_ep():
 
         assert actual == expected, (
             f"Parallel vs sequential mismatch for {fen}\n"
-            f"Missing: {expected - actual}\n"
-            f"Extra: {actual - expected}"
-        )
-
-
-@pytest.mark.legal_moves
-@pytest.mark.known_bug
-@pytest.mark.xfail(reason="Parallel move gen has known EP bug", strict=False)
-def test_cboards_parallel_ep_known_bug():
-    """EP positions in parallel mode — documents known discrepancy."""
-    ep_fens = [f for f in _fens if " - " not in f][:20]
-
-    for fen in ep_fens:
-        cboard = CBoard.from_fen(fen)
-        expected = set(cboard.to_possible_moves().to_str())
-
-        cboards = CBoards.from_fen([fen, fen])
-        actual = set(cboards.to_possible_moves()[0].to_str())
-
-        assert actual == expected, (
-            f"Parallel EP mismatch for {fen}\n"
             f"Missing: {expected - actual}\n"
             f"Extra: {actual - expected}"
         )

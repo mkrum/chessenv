@@ -196,14 +196,9 @@ def test_cboards_against_python_chess_directly():
     """
     Direct regression test for CBoards.to_possible_moves against python-chess legal_moves.
     This ensures the implementation correctly generates legal moves according to chess rules.
-
-    Note: We skip positions with en passant possibilities since the parallel implementation
-    has a known limitation with en passant capture generation.
     """
-    # Sample FEN positions that don't have en passant
-    filtered_fens = [f for f in fen if " - " in f]
     sample_size = 10  # Reduced to 10 for faster test runs
-    sample_fens = random.sample(filtered_fens, sample_size)
+    sample_fens = random.sample(fen, sample_size)
 
     # Process each position individually for better debugging
     for i, position_fen in enumerate(sample_fens):

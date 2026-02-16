@@ -276,24 +276,29 @@ void board_to_fen(char *fen, Board board) {
     ++idx;
 
     int castle = board.castle;
-    if (castle >= 8) {
-        fen[idx] = 'q';
+    if (castle == 0) {
+        fen[idx] = '-';
         idx++;
-        castle -= 8;
-    }
-    if (castle >= 4) {
-        fen[idx] = 'k';
-        idx++;
-        castle -= 4;
-    }
-    if (castle >= 2) {
-        fen[idx] = 'Q';
-        idx++;
-        castle -= 2;
-    }
-    if (castle >= 1) {
-        fen[idx] = 'K';
-        idx++;
+    } else {
+        if (castle >= 8) {
+            fen[idx] = 'q';
+            idx++;
+            castle -= 8;
+        }
+        if (castle >= 4) {
+            fen[idx] = 'k';
+            idx++;
+            castle -= 4;
+        }
+        if (castle >= 2) {
+            fen[idx] = 'Q';
+            idx++;
+            castle -= 2;
+        }
+        if (castle >= 1) {
+            fen[idx] = 'K';
+            idx++;
+        }
     }
 
     fen[idx] = ' ';
@@ -399,10 +404,6 @@ void array_to_possible(int *move_arr, int *board_arr) {
  * move_arr - Preallocated buffer for all moves, size should be n * MAX_MOVES * 5 integers
  * board_arrs - Array of board arrays, each 69 integers
  * n - Number of boards to process
- *
- * NOTE: This implementation has a known limitation: it does not correctly generate
- * en passant capture moves. If your application requires accurate en passant move
- * generation, use array_to_possible for individual boards instead.
  */
 void parallel_array_to_possible(int *move_arr, int *board_arrs, int n) {
     bb_init();  // Make sure bitboards are initialized
@@ -525,24 +526,29 @@ void board_to_inverted_fen(char *fen, Board board) {
     ++idx;
 
     int castle = board.castle;
-    if (castle >= 8) {
-        fen[idx] = 'Q';
+    if (castle == 0) {
+        fen[idx] = '-';
         idx++;
-        castle -= 8;
-    }
-    if (castle >= 4) {
-        fen[idx] = 'K';
-        idx++;
-        castle -= 4;
-    }
-    if (castle >= 2) {
-        fen[idx] = 'q';
-        idx++;
-        castle -= 2;
-    }
-    if (castle >= 1) {
-        fen[idx] = 'k';
-        idx++;
+    } else {
+        if (castle >= 8) {
+            fen[idx] = 'Q';
+            idx++;
+            castle -= 8;
+        }
+        if (castle >= 4) {
+            fen[idx] = 'K';
+            idx++;
+            castle -= 4;
+        }
+        if (castle >= 2) {
+            fen[idx] = 'q';
+            idx++;
+            castle -= 2;
+        }
+        if (castle >= 1) {
+            fen[idx] = 'k';
+            idx++;
+        }
     }
 
     fen[idx] = ' ';
@@ -628,24 +634,29 @@ void board_to_fen_noep(char *fen, Board board) {
     ++idx;
 
     int castle = board.castle;
-    if (castle >= 8) {
-        fen[idx] = 'q';
+    if (castle == 0) {
+        fen[idx] = '-';
         idx++;
-        castle -= 8;
-    }
-    if (castle >= 4) {
-        fen[idx] = 'k';
-        idx++;
-        castle -= 4;
-    }
-    if (castle >= 2) {
-        fen[idx] = 'Q';
-        idx++;
-        castle -= 2;
-    }
-    if (castle >= 1) {
-        fen[idx] = 'K';
-        idx++;
+    } else {
+        if (castle >= 8) {
+            fen[idx] = 'q';
+            idx++;
+            castle -= 8;
+        }
+        if (castle >= 4) {
+            fen[idx] = 'k';
+            idx++;
+            castle -= 4;
+        }
+        if (castle >= 2) {
+            fen[idx] = 'Q';
+            idx++;
+            castle -= 2;
+        }
+        if (castle >= 1) {
+            fen[idx] = 'K';
+            idx++;
+        }
     }
 
     fen[idx] = ' ';

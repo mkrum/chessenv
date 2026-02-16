@@ -35,15 +35,13 @@ def test_en_passant_single_board(fen, description):
 
 @pytest.mark.rules
 @pytest.mark.en_passant
-@pytest.mark.known_bug
-@pytest.mark.xfail(reason="Parallel move generation has known EP bug", strict=False)
 @pytest.mark.parametrize(
     "fen,description",
     [(f, d) for f, d in EN_PASSANT_POSITIONS if "illegal" not in d.lower()],
     ids=[d for _, d in EN_PASSANT_POSITIONS if "illegal" not in d.lower()],
 )
 def test_en_passant_parallel_board(fen, description):
-    """EP in parallel_array_to_possible — known to have issues with EP."""
+    """EP moves generated correctly by CBoards (parallel_array_to_possible)."""
     cboards = CBoards.from_fen([fen, fen])  # Need >=2 for parallel path
     parallel_moves = set(cboards.to_possible_moves()[0].to_str())
 
