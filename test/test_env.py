@@ -23,12 +23,8 @@ def test_env():
             if done[b_idx]:
                 boards[b_idx] = chess.Board()
 
-        # TODO: En Passant is saved even if not possible
         states = env.get_state().flatten()
-        states[states == 13] = 0
-
         recon_board = CBoards.from_board(boards).to_array()
-        recon_board[recon_board == 13] = 0
 
         assert (states == recon_board).all()
 

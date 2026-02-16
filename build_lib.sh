@@ -4,10 +4,10 @@ set -e
 # Create lib directory if it doesn't exist
 mkdir -p lib
 
-# Check if MisterQueen exists, clone if not
-if [ ! -d "MisterQueen" ]; then
-  echo "Cloning MisterQueen repository..."
-  git clone https://github.com/fogleman/MisterQueen.git
+# Initialize MisterQueen submodule if needed
+if [ ! -f "MisterQueen/Makefile" ]; then
+  echo "Initializing MisterQueen submodule..."
+  git submodule update --init MisterQueen
 fi
 
 # Set compile flags based on platform

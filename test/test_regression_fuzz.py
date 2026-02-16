@@ -41,16 +41,11 @@ def test_random_games_state_consistency():
                 break
             continue
 
-        # Compare states (zero out EP markers due to known issues)
+        # Compare states
         env_state = env.get_state().flatten()
-        env_state_no_ep = env_state.copy()
-        env_state_no_ep[env_state_no_ep == 13] = 0
-
         py_arr = CBoard.from_board(py_board).to_array()
-        py_arr_no_ep = py_arr.copy()
-        py_arr_no_ep[py_arr_no_ep == 13] = 0
 
-        assert np.array_equal(env_state_no_ep, py_arr_no_ep), (
+        assert np.array_equal(env_state, py_arr), (
             f"State mismatch at step {step}\n"
             f"Env state: {env_state}\n"
             f"Python state: {py_arr}"

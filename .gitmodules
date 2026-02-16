@@ -1,0 +1,4 @@
+[submodule "MisterQueen"]
+	path = MisterQueen
+	url = https://github.com/mkrum/MisterQueen.git
+	branch = fastchessenv
